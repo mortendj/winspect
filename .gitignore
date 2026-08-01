@@ -1,0 +1,14 @@
+# Generated reports and logs
+winspect-report.txt
+winspect-report.md
+winspect-report.html
+*.log
+*.bak
+
+# Legacy reference material - not part of the public tool, kept locally only
+old-code.ps1
+old-src/
+
+# OS/editor cruft
+Thumbs.db
+.DS_Store
