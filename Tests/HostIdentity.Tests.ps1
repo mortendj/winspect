@@ -29,10 +29,10 @@ Describe "Get-OperatingSystemVersion" {
 Describe "Get-MachineId" {
     It "returns the SMBIOS UUID reported for the computer system product" {
         Mock Get-MyWmiObject {
-            [pscustomobject]@{ UUID = "4C4C4544-004B-4A10-8054-B6C04F534333" }
+            [pscustomobject]@{ UUID = "CDF27266-0D99-42DB-9685-5AF465383592" }
         } -ParameterFilter { $className -eq "Win32_ComputerSystemProduct" }
 
-        Get-MachineId | Should -Be "4C4C4544-004B-4A10-8054-B6C04F534333"
+        Get-MachineId | Should -Be "CDF27266-0D99-42DB-9685-5AF465383592"
     }
 }
 

@@ -45,6 +45,14 @@ function New-Report() {
     )
     $output += New-SectionOutput $sectionHeading $lineScriptBlocks
 
+    # CERTIFICATES
+    $sectionHeading = "CERTIFICATES"
+    $lineScriptBlocks = @(
+        { "Certificate expirations$FIELD_LABEL_SEPARATOR" },
+        { "$(Invoke-WithErrorHandling -ScriptBlock {Get-CertificateExpirations})" }
+    )
+    $output += New-SectionOutput $sectionHeading $lineScriptBlocks
+
     # FILE WRITE ERRORS (this section only appears if indeed there are file write errors)
     $sectionHeading = "FILE WRITE ERRORS"
     $anyFileWriteErrors = $script:FileWriteErrorCounts.Values | Where-Object { $_ -gt 0 }

@@ -6,7 +6,7 @@ configuration. It reports only on things that are true of any Windows machine, r
 what's installed on it, so it's meant to be a reusable foundation rather than a one-off script.
 
 > **Status:** early, actively developed (v0.2.0). The current release covers host identity plus
-> CPU, RAM, and disk capacity/usage. See [Roadmap](#roadmap) for what's next.
+> CPU, RAM, and disk capacity/usage.
 
 ## Features
 
@@ -17,6 +17,9 @@ what's installed on it, so it's meant to be a reusable foundation rather than a 
   manual read/write fallback test).
 - **Current resource usage:** CPU load and RAM usage, reported separately from capacity since
   they're a point-in-time snapshot rather than a fixed property of the machine.
+- **Certificate expirations:** certificates this host actually uses (has a private key for),
+  soonest-expiring first, showing both the expiration date and days remaining (or how long ago
+  it expired) — trust-chain/CA certificates that happen to share the store are excluded.
 - **Report context:** local time, current user, script version, and whether the session is
   running elevated (relevant since disk performance testing needs it).
 - **Output formats:** plain text, Markdown, or HTML.
@@ -82,7 +85,7 @@ Running elevated: Yes
 ###################### HOST IDENTITY #######################
 Hostname: CONTOSO-SRV01
 Operating system: Microsoft Windows Server 2022 Standard (10.0.20348, build 20348)
-Machine ID: 4C4C4544-004B-4A10-8054-B6C04F534333
+Machine ID: CDF27266-0D99-42DB-9685-5AF465383592
 Virtualization: Bare metal (or undetected virtualization platform)
 
 ##################### SYSTEM RESOURCES #####################
@@ -95,9 +98,14 @@ Disk speed:
 Disk latency:
     C: -> 0.671 ms
 
-###################### RESOURCE USAGE #######################
+###################### RESOURCE USAGE ######################
 Current CPU load: 17 %
 Current RAM usage: 82.7 %
+
+####################### CERTIFICATES #######################
+Certificate expirations:
+    old.contoso-srv01.local -> expires 2022-08-06 (EXPIRED 1456 days ago)
+    contoso-srv01.local -> expires 2028-12-31 (882 days)
 ```
 
 ## Project layout
@@ -113,6 +121,7 @@ src/
   HostIdentity.ps1       hostname, OS version, machine ID, VM detection, admin-rights check
   CpuMemoryInfo.ps1      CPU and RAM capacity/usage
   DiskInfo.ps1           disk capacity, speed, latency
+  Certificates.ps1       certificate expirations from the local machine store
   ReportFormatting.ps1   page/section headers, bold-formatting, report post-processing
   ReportBuilder.ps1      assembles the report sections
   MainOrchestration.ps1  top-level run sequence
@@ -131,10 +140,6 @@ only the real system-query boundary (`Get-MyWmiObject`, `Invoke-ExternalCommand`
 actual logic on top, tests that assemble a real report from mocked leaf data to check the
 formatting/bolding pipeline end-to-end, and a final smoke test that runs the real entry point
 with no mocks at all, asserting on output shape rather than exact values.
-
-## Roadmap
-
-- Report-type filtering (e.g. verification vs. troubleshooting vs. documentation views).
 
 ## Contributing
 
