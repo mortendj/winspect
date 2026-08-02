@@ -4,6 +4,7 @@ winspect-report.md
 winspect-report.html
 *.log
 *.bak
+testResults.xml
 
 # Legacy reference material - not part of the public tool, kept locally only
 old-code.ps1

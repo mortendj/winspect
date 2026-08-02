@@ -6,7 +6,7 @@ certificate expirations. It reports only on things that are true of any Windows 
 regardless of what's installed on it, so it's meant to be a reusable foundation rather than a
 one-off script.
 
-> **Status:** early, actively developed (v0.6.0). The current release covers host identity,
+> **Status:** early, actively developed (v0.7.0). The current release covers host identity,
 > network adapters, certificate expirations (local store, plus an opt-in file/host check), an
 > opt-in gMSA account check, CPU/RAM/disk capacity and usage, and an update check against GitHub
 > releases.
@@ -32,9 +32,11 @@ one-off script.
   itself as a file, or one served live by a specific host, rather than one registered in Windows'
   own certificate store.
 - **gMSA account check** (opt-in, needs a name): whether a named Group Managed Service Account
-  exists in Active Directory and whether this host can actually retrieve/use it. Requires this
-  host to be domain-joined and have the ActiveDirectory module installed — reports why it can't
-  check otherwise, rather than failing. Only shown when `-gmsaAccountName` is supplied.
+  exists in Active Directory and whether this host can actually retrieve/use it. Accepts either a
+  bare account name or a `DOMAIN\name` form — the domain prefix is stripped before the lookup, since
+  Active Directory's own cmdlets only resolve the bare name. Requires this host to be domain-joined
+  and have the ActiveDirectory module installed — reports why it can't check otherwise, rather than
+  failing. Only shown when `-gmsaAccountName` is supplied.
 - **Report context:** local time, current user, script version, and whether the session is
   running elevated (relevant since disk performance testing needs it).
 - **Output formats:** plain text, Markdown, or HTML.
@@ -111,7 +113,7 @@ skipDiskPerformanceMeasurements true
 ####################### REPORT INFO ########################
 Local time: 2026-08-02 10:44:26
 User: CONTOSO-SRV01\admin
-Script version: Winspect v. 0.6.0 (2026-08-02)
+Script version: Winspect v. 0.7.0 (2026-08-02)
 Running elevated: Yes
 
 ###################### HOST IDENTITY #######################
@@ -158,7 +160,7 @@ If a newer release exists, a one-line notice prints before the report itself —
 banner, not part of the report's content or file output:
 
 ```
-A newer version of Winspect is available: v0.7.0 (you have v0.6.0). Get it at https://github.com/mortendj/winspect/releases/latest
+A newer version of Winspect is available: v0.8.0 (you have v0.7.0). Get it at https://github.com/mortendj/winspect/releases/latest
 
 ####################### REPORT INFO ########################
 ...

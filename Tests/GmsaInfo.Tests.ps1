@@ -20,6 +20,20 @@ Describe "Test-DomainJoined" {
     }
 }
 
+Describe "Get-SamAccountNameWithoutDomainPrefix" {
+    It "strips a NetBIOS domain prefix when one is present" {
+        Get-SamAccountNameWithoutDomainPrefix "adi\adi-SvcLocator$" | Should -Be "adi-SvcLocator$"
+    }
+
+    It "returns the name unchanged when there is no domain prefix" {
+        Get-SamAccountNameWithoutDomainPrefix "adi-SvcLocator$" | Should -Be "adi-SvcLocator$"
+    }
+
+    It "only splits on the first backslash" {
+        Get-SamAccountNameWithoutDomainPrefix "adi\sub\adi-SvcLocator$" | Should -Be "sub\adi-SvcLocator$"
+    }
+}
+
 Describe "Test-ActiveDirectoryModuleAvailable" {
     It "returns true when the ActiveDirectory module is listed as available" {
         Mock Get-Module { [pscustomobject]@{ Name = "ActiveDirectory" } } -ParameterFilter { $ListAvailable -and $Name -eq "ActiveDirectory" }

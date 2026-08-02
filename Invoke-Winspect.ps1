@@ -33,8 +33,10 @@ lines starting with '#' are ignored. Command line parameters still take preceden
 set in this file.
 
 .PARAMETER gmsaAccountName
-Name of a Group Managed Service Account to check. When supplied, reports whether the account
-exists in Active Directory and whether this host can use it. Requires this host to be
+Name of a Group Managed Service Account to check. Accepts either a bare sAMAccountName or a
+DOMAIN\name form - any NetBIOS domain prefix is stripped before the Active Directory lookup, since
+Get-ADServiceAccount's -Identity only resolves the bare name. When supplied, reports whether the
+account exists in Active Directory and whether this host can use it. Requires this host to be
 domain-joined and have the ActiveDirectory module installed; otherwise reports why it can't check.
 Omitted by default, in which case this section doesn't appear at all.
 
