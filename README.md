@@ -1,12 +1,13 @@
 # Winspect
 
 Winspect is a modular PowerShell tool for inspecting and reporting on the state of a Windows
-host — hardware capacity, current resource usage, host identity, and (in later releases)
-configuration. It reports only on things that are true of any Windows machine, regardless of
-what's installed on it, so it's meant to be a reusable foundation rather than a one-off script.
+host — hardware capacity, current resource usage, host identity, network configuration, and
+certificate expirations. It reports only on things that are true of any Windows machine,
+regardless of what's installed on it, so it's meant to be a reusable foundation rather than a
+one-off script.
 
-> **Status:** early, actively developed (v0.2.0). The current release covers host identity plus
-> CPU, RAM, and disk capacity/usage.
+> **Status:** early, actively developed (v0.3.0). The current release covers host identity,
+> network adapters, certificate expirations, and CPU/RAM/disk capacity and usage.
 
 ## Features
 
@@ -82,7 +83,7 @@ skipDiskPerformanceMeasurements true
 ####################### REPORT INFO ########################
 Local time: 2026-08-02 10:44:26
 User: CONTOSO-SRV01\admin
-Script version: Winspect v. 0.2.0 (2026-08-02)
+Script version: Winspect v. 0.3.0 (2026-08-02)
 Running elevated: Yes
 
 ###################### HOST IDENTITY #######################

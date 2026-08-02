@@ -1,6 +1,6 @@
 ################## VERSION ##################
 
-$SCRIPT_VERSION          = "0.2.0"
+$SCRIPT_VERSION          = "0.3.0"
 $VERSION_TIMESTAMP       = "2026-08-02"
 $SCRIPT_NAME             = "Winspect"
 $VERSION_STRING          = "$SCRIPT_NAME v. $SCRIPT_VERSION ($VERSION_TIMESTAMP)"
