@@ -36,6 +36,18 @@ Describe "Get-DiskCapacity" {
         $result | Should -Match "500"
     }
 
+    It "does not insert a thousands-separator when capacity is 1000 GB or more" {
+        Mock Get-MyWmiObject {
+            @(
+                [pscustomobject]@{ DeviceID = "C:"; DriveType = 3; Size = 1500GB; FreeSpace = 500GB }
+            )
+        } -ParameterFilter { $className -eq "Win32_LogicalDisk" }
+
+        $result = Get-DiskCapacity
+        $result | Should -Not -Match ","
+        $result | Should -Match "1000\.0 GB / 1500\.0 GB"
+    }
+
     It "uses a period decimal separator regardless of the current culture" {
         $originalCulture = [System.Threading.Thread]::CurrentThread.CurrentCulture
         try {

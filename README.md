@@ -1,19 +1,24 @@
 # Winspect
 
 Winspect is a modular PowerShell tool for inspecting and reporting on the state of a Windows
-host — hardware capacity, current resource usage, and (in later releases) host identity and
+host — hardware capacity, current resource usage, host identity, and (in later releases)
 configuration. It reports only on things that are true of any Windows machine, regardless of
 what's installed on it, so it's meant to be a reusable foundation rather than a one-off script.
 
-> **Status:** early, actively developed (v0.1.0). The current release covers CPU, RAM, and disk
-> capacity/usage. See [Roadmap](#roadmap) for what's next.
+> **Status:** early, actively developed (v0.2.0). The current release covers host identity plus
+> CPU, RAM, and disk capacity/usage. See [Roadmap](#roadmap) for what's next.
 
 ## Features
 
-- **CPU:** logical core count, current load.
-- **RAM:** total capacity, current usage.
-- **Disk:** capacity and free space per fixed drive, plus read/write speed and latency
-  (via `winsat` where available, with a manual read/write fallback test).
+- **Host identity:** hostname, OS version/build, machine ID (SMBIOS UUID), and virtual-machine
+  detection (VMware/Hyper-V/VirtualBox/KVM/QEMU/Xen).
+- **CPU / RAM / disk capacity:** logical core count, RAM capacity, disk capacity and free space
+  per fixed drive, plus disk read/write speed and latency (via `winsat` where available, with a
+  manual read/write fallback test).
+- **Current resource usage:** CPU load and RAM usage, reported separately from capacity since
+  they're a point-in-time snapshot rather than a fixed property of the machine.
+- **Report context:** local time, current user, script version, and whether the session is
+  running elevated (relevant since disk performance testing needs it).
 - **Output formats:** plain text, Markdown, or HTML.
 - **Output destinations:** terminal, a report file, or both.
 - **Structured logging:** off by default, configurable up to trace-level detail, written
@@ -69,21 +74,30 @@ skipDiskPerformanceMeasurements true
 
 ```
 ####################### REPORT INFO ########################
-Local time: 2026-08-01 10:44:26
+Local time: 2026-08-02 10:44:26
 User: CONTOSO-SRV01\admin
-Script version: Winspect v. 0.1.0 (2026-08-01)
+Script version: Winspect v. 0.2.0 (2026-08-02)
+Running elevated: Yes
+
+###################### HOST IDENTITY #######################
+Hostname: CONTOSO-SRV01
+Operating system: Microsoft Windows Server 2022 Standard (10.0.20348, build 20348)
+Machine ID: 4C4C4544-004B-4A10-8054-B6C04F534333
+Virtualization: Bare metal (or undetected virtualization platform)
 
 ##################### SYSTEM RESOURCES #####################
 CPU cores: 12
-Current CPU load: 17 %
 RAM capacity: 16 GB
-Current RAM usage: 82.7 %
 Disk capacity:
     C: -> 352.7 GB / 454.9 GB
 Disk speed:
-    C: -> 352.12 (RR), 1729.46 (RS), 1637.59 (WS), 383.6 (WF), 3578.72 (RF)
+    C: -> 352.12 (RR), 1729.46 (RS), 1637.59 (WS), 383.60 (WF), 578.72 (RF)
 Disk latency:
     C: -> 0.671 ms
+
+###################### RESOURCE USAGE #######################
+Current CPU load: 17 %
+Current RAM usage: 82.7 %
 ```
 
 ## Project layout
@@ -96,6 +110,7 @@ src/
   Parameters.ps1         merges command-line, parameters-file, and default values
   Utilities.ps1          general helpers: timestamps, external command invocation, retry logic
   SystemQuery.ps1        CIM/WMI query helper
+  HostIdentity.ps1       hostname, OS version, machine ID, VM detection, admin-rights check
   CpuMemoryInfo.ps1      CPU and RAM capacity/usage
   DiskInfo.ps1           disk capacity, speed, latency
   ReportFormatting.ps1   page/section headers, bold-formatting, report post-processing
@@ -119,7 +134,6 @@ with no mocks at all, asserting on output shape rather than exact values.
 
 ## Roadmap
 
-- Host identity: hostname, OS version, machine ID, VM vs. bare-metal, admin-rights check.
 - Report-type filtering (e.g. verification vs. troubleshooting vs. documentation views).
 
 ## Contributing

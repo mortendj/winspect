@@ -23,7 +23,11 @@ Describe "Invoke-Winspect end-to-end" {
         $reportText = $output -join "`n"
 
         $reportText | Should -Match "REPORT INFO"
+        $reportText | Should -Match "HOST IDENTITY"
         $reportText | Should -Match "SYSTEM RESOURCES"
+        $reportText | Should -Match "RESOURCE USAGE"
+        $reportText | Should -Match "Running elevated: (Yes|No)"
+        $reportText | Should -Match "Hostname: \S+"
         $reportText | Should -Match "CPU cores: \d+"
         $reportText | Should -Match "RAM capacity: \d+ GB"
         $reportText | Should -Match "Current CPU load: [\d.]+ %"

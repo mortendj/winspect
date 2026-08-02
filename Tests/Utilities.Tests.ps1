@@ -28,6 +28,14 @@ Describe "Format-InvariantNumber" {
     It "formats whole numbers without unwanted decimals when no format string is given" {
         Format-InvariantNumber 12 | Should -Be "12"
     }
+
+    It "does not insert a thousands-separator for values over 1000 when using an F format string" {
+        # Regression test: "N" format specifiers always group thousands (e.g. "2,770.18"), which
+        # is wrong here since nothing else in the report groups thousands - "F" format specifiers
+        # don't. This bug shipped and was only caught because it happened to show up in real usage
+        # (a disk read speed over 1000 MB/s) - no test had exercised a value that large before.
+        Format-InvariantNumber 2770.18 "F2" | Should -Be "2770.18"
+    }
 }
 
 Describe "Invoke-WithRetry" {

@@ -10,7 +10,7 @@ function Get-RamCapacity() {
     $operatingSystem = Get-MyWmiObject Win32_OperatingSystem
     $totalVisibleMemorySize = $operatingSystem.TotalVisibleMemorySize
     $ramInGB = [math]::Round($totalVisibleMemorySize / (1024 * 1024), 2)
-    Write-ReturnValue (Format-InvariantNumber $ramInGB "N0")
+    Write-ReturnValue (Format-InvariantNumber $ramInGB "F0")
 }
 
 function Get-CurrentCpuUsage() {

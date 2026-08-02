@@ -30,6 +30,14 @@ Describe "Get-RamCapacity" {
         Get-RamCapacity | Should -Be "16"
     }
 
+    It "does not insert a thousands-separator when capacity is 1000 GB or more" {
+        Mock Get-MyWmiObject {
+            [pscustomobject]@{ TotalVisibleMemorySize = 1073741824 } # 1024 GB in KB
+        } -ParameterFilter { $className -eq "Win32_OperatingSystem" }
+
+        Get-RamCapacity | Should -Be "1024"
+    }
+
     It "uses a period decimal separator regardless of the current culture" {
         $originalCulture = [System.Threading.Thread]::CurrentThread.CurrentCulture
         try {

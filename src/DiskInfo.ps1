@@ -15,8 +15,8 @@ function Get-DiskCapacity() {
         $freeSpace = [math]::Round($disk.FreeSpace / 1GB, 2)
         $totalSpace = [math]::Round($disk.Size / 1GB, 2)
         $usedSpace = $totalSpace - $freeSpace
-        $usedSpaceText = Format-InvariantNumber $usedSpace "N1"
-        $totalSpaceText = Format-InvariantNumber $totalSpace "N1"
+        $usedSpaceText = Format-InvariantNumber $usedSpace "F1"
+        $totalSpaceText = Format-InvariantNumber $totalSpace "F1"
         $all_disks += "$INDENTATION$driveLetter -> $usedSpaceText GB / $totalSpaceText GB"
     }
     Write-ReturnValue "$($all_disks -join $LOGICAL_NEWLINE)"
@@ -105,8 +105,8 @@ function Get-DiskSpeedUsingMeasureCommand($driveLetter) {
         throw $errorMsg
     }
 
-    $writeSpeedMBs = Format-InvariantNumber ([math]::Round($fileSizeMB / $writeSpeed.TotalSeconds, 2)) "N2"
-    $readSpeedMBs = Format-InvariantNumber ([math]::Round($fileSizeMB / $readSpeed.TotalSeconds, 2)) "N2"
+    $writeSpeedMBs = Format-InvariantNumber ([math]::Round($fileSizeMB / $writeSpeed.TotalSeconds, 2)) "F2"
+    $readSpeedMBs = Format-InvariantNumber ([math]::Round($fileSizeMB / $readSpeed.TotalSeconds, 2)) "F2"
     Write-ReturnValue @($writeSpeedMBs, $readSpeedMBs)
 }
 

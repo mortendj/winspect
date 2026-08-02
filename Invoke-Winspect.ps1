@@ -74,6 +74,7 @@ $SRC_DIR = Join-Path $PSScriptRoot "src"
 . (Join-Path $SRC_DIR "Parameters.ps1")
 . (Join-Path $SRC_DIR "Utilities.ps1")
 . (Join-Path $SRC_DIR "SystemQuery.ps1")
+. (Join-Path $SRC_DIR "HostIdentity.ps1")
 . (Join-Path $SRC_DIR "CpuMemoryInfo.ps1")
 . (Join-Path $SRC_DIR "DiskInfo.ps1")
 . (Join-Path $SRC_DIR "ReportFormatting.ps1")

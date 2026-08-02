@@ -1,7 +1,7 @@
 ################## VERSION ##################
 
-$SCRIPT_VERSION          = "0.1.0"
-$VERSION_TIMESTAMP       = "2026-08-01"
+$SCRIPT_VERSION          = "0.2.0"
+$VERSION_TIMESTAMP       = "2026-08-02"
 $SCRIPT_NAME             = "Winspect"
 $VERSION_STRING          = "$SCRIPT_NAME v. $SCRIPT_VERSION ($VERSION_TIMESTAMP)"
 
@@ -38,3 +38,14 @@ $ERROR_PREFIX            = "ERROR -->"
 
 $DISK_SPEED_PATTERN      = '(\d+\.\d+)\s*MB/s'
 $DISK_LATENCY_PATTERN    = '95(?:th)?\s+[Pp]ercentil[e]?\s+([\d.]+\s*ms)'
+
+################## HOST IDENTITY (VM manufacturer/model signatures) ##################
+
+$VM_SIGNATURES           = @(
+    @{ Pattern = "VMware"; Platform = "VMware" },
+    @{ Pattern = "Virtual Machine"; Platform = "Hyper-V" },
+    @{ Pattern = "VirtualBox"; Platform = "VirtualBox" },
+    @{ Pattern = "KVM"; Platform = "KVM" },
+    @{ Pattern = "QEMU"; Platform = "QEMU" },
+    @{ Pattern = "Xen"; Platform = "Xen" }
+)
