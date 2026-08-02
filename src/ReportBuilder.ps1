@@ -23,6 +23,14 @@ function New-Report() {
     )
     $output += New-SectionOutput $sectionHeading $lineScriptBlocks
 
+    # NETWORK
+    $sectionHeading = "NETWORK"
+    $lineScriptBlocks = @(
+        { "Network adapters$FIELD_LABEL_SEPARATOR" },
+        { "$(Invoke-WithErrorHandling -ScriptBlock {Get-NetworkAdapters})" }
+    )
+    $output += New-SectionOutput $sectionHeading $lineScriptBlocks
+
     # SYSTEM RESOURCES (capacity - what the machine has, not how busy it currently is)
     $sectionHeading = "SYSTEM RESOURCES"
     $lineScriptBlocks = @(

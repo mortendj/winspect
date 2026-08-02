@@ -12,6 +12,9 @@ what's installed on it, so it's meant to be a reusable foundation rather than a 
 
 - **Host identity:** hostname, OS version/build, machine ID (SMBIOS UUID), and virtual-machine
   detection (VMware/Hyper-V/VirtualBox/KVM/QEMU/Xen).
+- **Network adapters:** name, IP address, and network category (Public/Private/Domain) for each
+  adapter that's actually connected — link-local (APIPA) addresses, which mean an adapter is
+  enabled but not connected to anything, are excluded rather than shown as noise.
 - **CPU / RAM / disk capacity:** logical core count, RAM capacity, disk capacity and free space
   per fixed drive, plus disk read/write speed and latency (via `winsat` where available, with a
   manual read/write fallback test).
@@ -88,6 +91,10 @@ Operating system: Microsoft Windows Server 2022 Standard (10.0.20348, build 2034
 Machine ID: CDF27266-0D99-42DB-9685-5AF465383592
 Virtualization: Bare metal (or undetected virtualization platform)
 
+######################### NETWORK ##########################
+Network adapters:
+    Ethernet0 -> 10.0.1.15 (DomainAuthenticated)
+
 ##################### SYSTEM RESOURCES #####################
 CPU cores: 12
 RAM capacity: 16 GB
@@ -119,6 +126,7 @@ src/
   Utilities.ps1          general helpers: timestamps, external command invocation, retry logic
   SystemQuery.ps1        CIM/WMI query helper
   HostIdentity.ps1       hostname, OS version, machine ID, VM detection, admin-rights check
+  NetworkInfo.ps1        network adapters (excludes link-local/disconnected ones)
   CpuMemoryInfo.ps1      CPU and RAM capacity/usage
   DiskInfo.ps1           disk capacity, speed, latency
   Certificates.ps1       certificate expirations from the local machine store

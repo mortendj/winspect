@@ -1,4 +1,6 @@
-function Get-ParametersFromFile($parametersFilePath) {
+function Get-ParametersFromFile {
+    [CmdletBinding()]
+    param($parametersFilePath)
     Write-FunctionCallLog $PSBoundParameters
     $parameters = @{}
     Get-Content -Path $parametersFilePath | ForEach-Object {

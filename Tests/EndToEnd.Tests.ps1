@@ -24,6 +24,7 @@ Describe "Invoke-Winspect end-to-end" {
 
         $reportText | Should -Match "REPORT INFO"
         $reportText | Should -Match "HOST IDENTITY"
+        $reportText | Should -Match "NETWORK"
         $reportText | Should -Match "SYSTEM RESOURCES"
         $reportText | Should -Match "RESOURCE USAGE"
         $reportText | Should -Match "CERTIFICATES"
