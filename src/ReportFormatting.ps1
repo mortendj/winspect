@@ -1,3 +1,22 @@
+function Initialize-OutputFormatLayout($outputFormat) {
+    if ($outputFormat -eq $HTML_STYLE) {
+        $script:LOGICAL_NEWLINE = "$BR$PHYSICAL_NEWLINE"
+        $script:INDENTATION     = "&nbsp;&nbsp;&nbsp;&nbsp;"
+        $script:START_HEADING   = "<h2>"
+        $script:END_HEADING     = "</h2>"
+    } elseif ($outputFormat -eq $MARKDOWN_STYLE) {
+        $script:LOGICAL_NEWLINE = $PHYSICAL_NEWLINE
+        $script:INDENTATION     = "&nbsp;&nbsp;&nbsp;&nbsp;"
+        $script:START_HEADING   = "##"
+        $script:END_HEADING     = ""
+    } elseif ($outputFormat -eq $TEXT_STYLE) {
+        $script:LOGICAL_NEWLINE = $PHYSICAL_NEWLINE
+        $script:INDENTATION     = "    "
+        $script:START_HEADING   = ""
+        $script:END_HEADING     = ""
+    }
+}
+
 function Get-CapitalizedTitle($title) {
     Write-FunctionCallLog $PSBoundParameters
     $capitalizedTitle = ([System.Globalization.CultureInfo]::GetCultureInfo("en-US")).TextInfo.ToTitleCase($title.ToLower())

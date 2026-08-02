@@ -116,7 +116,7 @@ function Get-DiskSpeed() {
     $disks = Get-Disks
     foreach ($disk in $disks) {
         $driveLetter = $($disk.DeviceID)
-        if ($cmdline_param_SKIP_DISK_PERFOR_MEASURE) {
+        if ($cmdline_param_SKIP_DISK_PERFORMANCE_MEASUREMENTS) {
             $speedReport = "disk performance testing skipped due to -skipDiskPerformanceMeasurements parameter"
         } else {
             try {
@@ -146,7 +146,7 @@ function Get-DiskLatency() {
     $disks = Get-Disks
     foreach ($disk in $disks) {
         $driveLetter = $($disk.DeviceID)
-        if ($cmdline_param_SKIP_DISK_PERFOR_MEASURE) {
+        if ($cmdline_param_SKIP_DISK_PERFORMANCE_MEASUREMENTS) {
             $latencyReport = "disk performance testing skipped due to -skipDiskPerformanceMeasurements parameter"
         } else {
             try {

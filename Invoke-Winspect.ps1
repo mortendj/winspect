@@ -81,26 +81,11 @@ $SRC_DIR = Join-Path $PSScriptRoot "src"
 . (Join-Path $SRC_DIR "MainOrchestration.ps1")
 
 $adjustedParameters = Get-AdjustedParameters $parametersFile
-$cmdline_param_VERSION                  = $adjustedParameters["version"]
-$cmdline_param_OUTPUT_FORMAT            = $adjustedParameters["outputFormat"]
-$cmdline_param_OUTPUT_DESTINATION       = $adjustedParameters["outputDestination"]
-$cmdline_param_SKIP_DISK_PERFOR_MEASURE = $adjustedParameters["skipDiskPerformanceMeasurements"]
+$cmdline_param_VERSION                            = $adjustedParameters["version"]
+$cmdline_param_OUTPUT_FORMAT                      = $adjustedParameters["outputFormat"]
+$cmdline_param_OUTPUT_DESTINATION                 = $adjustedParameters["outputDestination"]
+$cmdline_param_SKIP_DISK_PERFORMANCE_MEASUREMENTS = $adjustedParameters["skipDiskPerformanceMeasurements"]
 
-if ($cmdline_param_OUTPUT_FORMAT -eq $HTML_STYLE) {
-    $LOGICAL_NEWLINE = "$BR$PHYSICAL_NEWLINE"
-    $INDENTATION     = "&nbsp;&nbsp;&nbsp;&nbsp;"
-    $START_HEADING   = "<h2>"
-    $END_HEADING     = "</h2>"
-} elseif ($cmdline_param_OUTPUT_FORMAT -eq $MARKDOWN_STYLE) {
-    $LOGICAL_NEWLINE = $PHYSICAL_NEWLINE
-    $INDENTATION     = "&nbsp;&nbsp;&nbsp;&nbsp;"
-    $START_HEADING   = "##"
-    $END_HEADING     = ""
-} elseif ($cmdline_param_OUTPUT_FORMAT -eq $TEXT_STYLE) {
-    $LOGICAL_NEWLINE = $PHYSICAL_NEWLINE
-    $INDENTATION     = "    "
-    $START_HEADING   = ""
-    $END_HEADING     = ""
-}
+Initialize-OutputFormatLayout $cmdline_param_OUTPUT_FORMAT
 
 Start-Winspect

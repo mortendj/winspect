@@ -103,11 +103,24 @@ src/
   MainOrchestration.ps1  top-level run sequence
 ```
 
+## Running tests
+
+Tests use [Pester](https://pester.dev/) 5.x:
+
+```powershell
+Invoke-Pester -Path .\Tests
+```
+
+The suite is layered: plain unit tests for pure functions (formatting, parsing), tests that mock
+only the real system-query boundary (`Get-MyWmiObject`, `Invoke-ExternalCommand`) and run the
+actual logic on top, tests that assemble a real report from mocked leaf data to check the
+formatting/bolding pipeline end-to-end, and a final smoke test that runs the real entry point
+with no mocks at all, asserting on output shape rather than exact values.
+
 ## Roadmap
 
 - Host identity: hostname, OS version, machine ID, VM vs. bare-metal, admin-rights check.
 - Report-type filtering (e.g. verification vs. troubleshooting vs. documentation views).
-- Automated tests.
 
 ## Contributing
 
