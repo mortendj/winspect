@@ -16,6 +16,44 @@ BeforeAll {
     }
 }
 
+Describe "Get-CertificateExpirationText" {
+    It "reports days remaining for a certificate that hasn't expired yet" {
+        $certificate = New-FakeCertificate "example.com" (Get-Date).AddDays(30)
+        Get-CertificateExpirationText $certificate | Should -Match "^expires \d{4}-\d{2}-\d{2} \(\d+ days\)$"
+    }
+
+    It "flags an already-expired certificate as EXPIRED rather than a negative day count" {
+        $certificate = New-FakeCertificate "old.example.com" (Get-Date).AddDays(-10)
+        Get-CertificateExpirationText $certificate | Should -Match "^expires \d{4}-\d{2}-\d{2} \(EXPIRED \d+ days ago\)$"
+    }
+}
+
+Describe "Get-AdditionalCertificateExpiration" {
+    # Mocks Winspect's own wrapper functions (Get-CertificateFromFile/Get-CertificateFromHostname),
+    # not X509Certificate2/TcpClient/SslStream directly - those are the real I/O boundary, only
+    # exercised for real against an actual file or live endpoint.
+
+    It "checks the file when a certificate file path is supplied" {
+        $certificate = New-FakeCertificate "from-file.example.com" (Get-Date).AddDays(30)
+        Mock Get-CertificateFromFile { $certificate }
+        Mock Get-CertificateFromHostname { throw "should not be called" }
+
+        $result = Get-AdditionalCertificateExpiration "C:\some\cert.crt" ""
+
+        $result | Should -Match "from-file\.example\.com"
+    }
+
+    It "checks the hostname when no file path is supplied" {
+        $certificate = New-FakeCertificate "from-host.example.com" (Get-Date).AddDays(30)
+        Mock Get-CertificateFromFile { throw "should not be called" }
+        Mock Get-CertificateFromHostname { $certificate }
+
+        $result = Get-AdditionalCertificateExpiration "" "from-host.example.com:443"
+
+        $result | Should -Match "from-host\.example\.com"
+    }
+}
+
 Describe "Get-CertificateExpirations" {
     # Every mock here returns via `return ,(...)`, deliberately matching the exact comma-wrapped
     # return shape Write-ReturnValue produces in the real Get-LocalMachineCertificates. A mock

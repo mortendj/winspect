@@ -12,6 +12,13 @@ function Start-Winspect() {
     } else {
         Remove-ExistingLogs
         Write-InfoLog "################### Starting $VERSION_STRING ###################"
+        if (-not $cmdline_param_SKIP_UPDATE_CHECK) {
+            $updateNotice = Get-UpdateNotice
+            if ($updateNotice -ne "") {
+                Write-Host $updateNotice
+                Write-Host ""
+            }
+        }
         $output = Invoke-Inspections
         Write-InfoLog "################### Tool execution completed ###################"
     }

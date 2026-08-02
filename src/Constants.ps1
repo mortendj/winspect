@@ -1,6 +1,6 @@
 ################## VERSION ##################
 
-$SCRIPT_VERSION          = "0.3.0"
+$SCRIPT_VERSION          = "0.6.0"
 $VERSION_TIMESTAMP       = "2026-08-02"
 $SCRIPT_NAME             = "Winspect"
 $VERSION_STRING          = "$SCRIPT_NAME v. $SCRIPT_VERSION ($VERSION_TIMESTAMP)"
@@ -38,6 +38,12 @@ $ERROR_PREFIX            = "ERROR -->"
 
 $DISK_SPEED_PATTERN      = '(\d+\.\d+)\s*MB/s'
 $DISK_LATENCY_PATTERN    = '95(?:th)?\s+[Pp]ercentil[e]?\s+([\d.]+\s*ms)'
+
+################## UPDATE CHECK ##################
+
+$GITHUB_REPO             = "mortendj/winspect"
+$GITHUB_RELEASES_API_URL = "https://api.github.com/repos/$GITHUB_REPO/releases/latest"
+$GITHUB_RELEASES_URL     = "https://github.com/$GITHUB_REPO/releases/latest"
 
 ################## HOST IDENTITY (VM manufacturer/model signatures) ##################
 

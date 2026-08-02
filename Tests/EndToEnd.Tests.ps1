@@ -28,6 +28,8 @@ Describe "Invoke-Winspect end-to-end" {
         $reportText | Should -Match "SYSTEM RESOURCES"
         $reportText | Should -Match "RESOURCE USAGE"
         $reportText | Should -Match "CERTIFICATES"
+        $reportText | Should -Not -Match "ADDITIONAL CERTIFICATE"
+        $reportText | Should -Not -Match "GMSA ACCOUNT"
         $reportText | Should -Match "Running elevated: (Yes|No)"
         $reportText | Should -Match "Hostname: \S+"
         $reportText | Should -Match "CPU cores: \d+"
@@ -62,6 +64,40 @@ Describe "Invoke-Winspect end-to-end" {
         } finally {
             Pop-Location
         }
+    }
+
+    It "shows the GMSA ACCOUNT section only when -gmsaAccountName is supplied" {
+        # This dev/CI machine is assumed not domain-joined, so the specific message asserted here
+        # is a real-environment assumption, not a universal guarantee - if this suite ever runs on
+        # a domain-joined machine, this assertion (though not the section-presence one above it)
+        # would need updating to match. Real account existence/usability can only be confirmed on
+        # an actual domain-joined host with a real gMSA name.
+        Push-Location $TestDrive
+        try {
+            $output = (& $winspectScript -outputFormat text -skipDiskPerformanceMeasurements -outputDestination terminal -gmsaAccountName "svc-test") -join "`n"
+        } finally {
+            Pop-Location
+        }
+
+        $output | Should -Match "GMSA ACCOUNT"
+        $output | Should -Match "Account name: svc-test"
+        $output | Should -Match "not domain-joined"
+        $output | Should -Not -Match "ERROR -->"
+    }
+
+    It "checks a live TLS endpoint's real certificate when -certificateHostname is supplied" {
+        # Depends on real network access and GitHub's own certificate - reasonable given this
+        # suite already depends on real system/network state elsewhere (e.g. the update check).
+        Push-Location $TestDrive
+        try {
+            $output = (& $winspectScript -outputFormat text -skipDiskPerformanceMeasurements -outputDestination terminal -certificateHostname "github.com") -join "`n"
+        } finally {
+            Pop-Location
+        }
+
+        $output | Should -Match "ADDITIONAL CERTIFICATE"
+        $output | Should -Match "github\.com -> expires \d{4}-\d{2}-\d{2} \(\d+ days\)"
+        $output | Should -Not -Match "ERROR -->"
     }
 
     It "never uses a comma as a decimal separator anywhere in the report" {

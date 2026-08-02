@@ -26,6 +26,13 @@ Describe "Limit-TextString" {
     }
 }
 
+Describe "Get-PSCustomObjectAsText" {
+    It "renders each property as Name=Value, joined with commas" {
+        $object = [pscustomobject]@{ Name = "example.com"; Port = 443 }
+        Get-PSCustomObjectAsText $object | Should -Be "Name=example.com, Port=443"
+    }
+}
+
 Describe "Get-VariableDisplayValue" {
     It "reports NULL for a null value" {
         Get-VariableDisplayValue $null | Should -Be "NULL"
@@ -49,6 +56,13 @@ Describe "Get-VariableDisplayValue" {
 
     It "renders boolean values via ToString" {
         Get-VariableDisplayValue $true | Should -Be "True"
+    }
+
+    It "renders a PSCustomObject via Get-PSCustomObjectAsText - this exact path was broken until now" {
+        # Get-PSCustomObjectAsText didn't exist at all until this test suite exposed it - dormant
+        # because no real production code path had ever logged a genuine PSCustomObject before.
+        $object = [pscustomobject]@{ Name = "example.com" }
+        Get-VariableDisplayValue $object | Should -Be "Name=example.com"
     }
 }
 

@@ -61,6 +61,27 @@ function New-Report() {
     )
     $output += New-SectionOutput $sectionHeading $lineScriptBlocks
 
+    # ADDITIONAL CERTIFICATE (only appears if -certificateFilePath or -certificateHostname was
+    # supplied - covers certificates an application manages as a file or live endpoint rather than
+    # through the Windows certificate store, which the CERTIFICATES section above can't see)
+    $sectionHeading = "ADDITIONAL CERTIFICATE"
+    if ($cmdline_param_CERTIFICATE_FILE_PATH -ne "" -or $cmdline_param_CERTIFICATE_HOSTNAME -ne "") {
+        $lineScriptBlocks = @(
+            { "$(Invoke-WithErrorHandling -ScriptBlock {Get-AdditionalCertificateExpiration $cmdline_param_CERTIFICATE_FILE_PATH $cmdline_param_CERTIFICATE_HOSTNAME})" }
+        )
+        $output += New-SectionOutput $sectionHeading $lineScriptBlocks
+    }
+
+    # GMSA ACCOUNT (this section only appears if -gmsaAccountName was supplied)
+    $sectionHeading = "GMSA ACCOUNT"
+    if ($cmdline_param_GMSA_ACCOUNT_NAME -ne "") {
+        $lineScriptBlocks = @(
+            { "Account name$FIELD_LABEL_SEPARATOR$cmdline_param_GMSA_ACCOUNT_NAME" },
+            { "Status$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-GmsaAccountStatus $cmdline_param_GMSA_ACCOUNT_NAME})" }
+        )
+        $output += New-SectionOutput $sectionHeading $lineScriptBlocks
+    }
+
     # FILE WRITE ERRORS (this section only appears if indeed there are file write errors)
     $sectionHeading = "FILE WRITE ERRORS"
     $anyFileWriteErrors = $script:FileWriteErrorCounts.Values | Where-Object { $_ -gt 0 }

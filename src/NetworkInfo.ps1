@@ -15,6 +15,12 @@ function Get-NetworkAdapters() {
     $adapterConfigurations = Get-NetworkAdapterConfigurations
     $lines = @()
     foreach ($adapterConfiguration in $adapterConfigurations) {
+        # An adapter with no network category at all is virtualization-internal (a Hyper-V or
+        # container NAT switch, confirmed noise on real customer hosts) rather than something a
+        # host's actual network presence - Windows never assigns these a category to begin with.
+        if ($null -eq $adapterConfiguration.NetProfile) {
+            continue
+        }
         # 169.254.x.x (APIPA) means "no DHCP server responded" - the adapter is enabled but not
         # actually connected to anything useful, and would just be noise in this report.
         $routableAddresses = @($adapterConfiguration.IPv4Address |
@@ -24,7 +30,7 @@ function Get-NetworkAdapters() {
             continue
         }
         $adapterName = $adapterConfiguration.InterfaceAlias
-        $category = if ($adapterConfiguration.NetProfile) { $adapterConfiguration.NetProfile.NetworkCategory } else { "Unknown" }
+        $category = $adapterConfiguration.NetProfile.NetworkCategory
         $lines += "$INDENTATION$adapterName -> $($routableAddresses -join ", ") ($category)"
     }
     if ($lines.Count -eq 0) {

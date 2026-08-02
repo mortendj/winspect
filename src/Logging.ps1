@@ -51,6 +51,11 @@ function Limit-TextString($textString) {
     return $truncatedString
 }
 
+function Get-PSCustomObjectAsText($object) {
+    $properties = $object.PSObject.Properties | ForEach-Object { "$($_.Name)=$($_.Value)" }
+    return $properties -join ", "
+}
+
 function Get-VariableDisplayValue($variable) {
     if ($null -eq $variable) {
         $displayValue = "NULL"

@@ -9,6 +9,9 @@ winspect-report.html
 old-code.ps1
 old-src/
 
+# Build output
+dist/
+
 # OS/editor cruft
 Thumbs.db
 .DS_Store

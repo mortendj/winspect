@@ -42,7 +42,9 @@ Describe "Get-NetworkAdapters" {
     }
 
     It "excludes an adapter whose only address is link-local (not actually connected to anything)" {
-        $disconnected = New-FakeAdapterConfiguration "Ethernet" @("169.254.1.1")
+        # Given an explicit category so this test isolates the link-local filter specifically -
+        # otherwise it would pass for the wrong reason (excluded for having no category at all).
+        $disconnected = New-FakeAdapterConfiguration "Ethernet" @("169.254.1.1") "Private"
         Mock Get-NetworkAdapterConfigurations { return ,@($disconnected) }
 
         Get-NetworkAdapters | Should -Match "No network adapters"
@@ -57,11 +59,11 @@ Describe "Get-NetworkAdapters" {
         $result | Should -Match "Wi-Fi -> 192\.168\.3\.55 \(Private\)"
     }
 
-    It "reports 'Unknown' category when the adapter has no network profile" {
-        $noProfile = New-FakeAdapterConfiguration "Ethernet" @("10.0.0.5")
+    It "excludes an adapter with no network category at all (virtualization-internal NAT/vEthernet noise)" {
+        $noProfile = New-FakeAdapterConfiguration "vEthernet (nat)" @("172.24.64.1")
         Mock Get-NetworkAdapterConfigurations { return ,@($noProfile) }
 
-        Get-NetworkAdapters | Should -Match "Ethernet -> 10\.0\.0\.5 \(Unknown\)"
+        Get-NetworkAdapters | Should -Match "No network adapters"
     }
 
     It "shows only the routable address when an adapter has both a link-local and a real address" {
@@ -76,7 +78,7 @@ Describe "Get-NetworkAdapters" {
 
     It "reports multiple adapters, excluding the disconnected one" {
         $wifi = New-FakeAdapterConfiguration "Wi-Fi" @("192.168.3.55") "Private"
-        $disconnected = New-FakeAdapterConfiguration "Bluetooth" @("169.254.9.9")
+        $disconnected = New-FakeAdapterConfiguration "Bluetooth" @("169.254.9.9") "Private"
         Mock Get-NetworkAdapterConfigurations { return ,@($wifi, $disconnected) }
 
         $result = Get-NetworkAdapters

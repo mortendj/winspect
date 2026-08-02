@@ -6,16 +6,19 @@ certificate expirations. It reports only on things that are true of any Windows 
 regardless of what's installed on it, so it's meant to be a reusable foundation rather than a
 one-off script.
 
-> **Status:** early, actively developed (v0.3.0). The current release covers host identity,
-> network adapters, certificate expirations, and CPU/RAM/disk capacity and usage.
+> **Status:** early, actively developed (v0.6.0). The current release covers host identity,
+> network adapters, certificate expirations (local store, plus an opt-in file/host check), an
+> opt-in gMSA account check, CPU/RAM/disk capacity and usage, and an update check against GitHub
+> releases.
 
 ## Features
 
 - **Host identity:** hostname, OS version/build, machine ID (SMBIOS UUID), and virtual-machine
   detection (VMware/Hyper-V/VirtualBox/KVM/QEMU/Xen).
 - **Network adapters:** name, IP address, and network category (Public/Private/Domain) for each
-  adapter that's actually connected — link-local (APIPA) addresses, which mean an adapter is
-  enabled but not connected to anything, are excluded rather than shown as noise.
+  adapter that's actually connected — link-local (APIPA) addresses and adapters with no network
+  category at all (both signs of a virtualization-internal adapter, not a real connection) are
+  excluded rather than shown as noise.
 - **CPU / RAM / disk capacity:** logical core count, RAM capacity, disk capacity and free space
   per fixed drive, plus disk read/write speed and latency (via `winsat` where available, with a
   manual read/write fallback test).
@@ -24,6 +27,14 @@ one-off script.
 - **Certificate expirations:** certificates this host actually uses (has a private key for),
   soonest-expiring first, showing both the expiration date and days remaining (or how long ago
   it expired) — trust-chain/CA certificates that happen to share the store are excluded.
+- **Additional certificate check** (opt-in, needs a file path or hostname): checks the expiration
+  of a certificate the local machine store scan above can't see — one an application manages
+  itself as a file, or one served live by a specific host, rather than one registered in Windows'
+  own certificate store.
+- **gMSA account check** (opt-in, needs a name): whether a named Group Managed Service Account
+  exists in Active Directory and whether this host can actually retrieve/use it. Requires this
+  host to be domain-joined and have the ActiveDirectory module installed — reports why it can't
+  check otherwise, rather than failing. Only shown when `-gmsaAccountName` is supplied.
 - **Report context:** local time, current user, script version, and whether the session is
   running elevated (relevant since disk performance testing needs it).
 - **Output formats:** plain text, Markdown, or HTML.
@@ -32,6 +43,10 @@ one-off script.
   alongside the script.
 - **File-based parameters:** defaults can be set in a plain text file instead of always
   passing command-line switches.
+- **Update check:** on startup, checks GitHub for a newer release and prints a one-line notice
+  if one exists — never downloads or replaces anything itself, and fails silently rather than
+  erroring if there's no outbound internet access, since Winspect may well be running on a
+  locked-down server. Can be skipped entirely with `-skipUpdateCheck`.
 
 ## Requirements
 
@@ -39,6 +54,8 @@ one-off script.
 - Run elevated (as Administrator) to get real disk speed/latency numbers — `winsat` and the
   manual disk write test both require it. Without elevation, those fields report as `-`
   rather than failing.
+- The gMSA account check needs this host to be domain-joined and have the ActiveDirectory
+  module (RSAT) installed. Without either, it reports why it can't check rather than failing.
 
 ## Usage
 
@@ -57,6 +74,13 @@ one-off script.
 
 # Just print the version and exit
 .\Invoke-Winspect.ps1 -version
+
+# Check whether this host can use a specific gMSA account
+.\Invoke-Winspect.ps1 -gmsaAccountName "svc-myapp"
+
+# Also check the expiration of a specific certificate file or live endpoint
+.\Invoke-Winspect.ps1 -certificateFilePath "C:\certs\gateway.crt"
+.\Invoke-Winspect.ps1 -certificateHostname "example.com:443"
 ```
 
 | Parameter | Values | Default | Description |
@@ -66,6 +90,10 @@ one-off script.
 | `-logLevel` | `trace`, `debug`, `info`, `warning`, `error`, `off` | `off` | Logging verbosity. |
 | `-skipDiskPerformanceMeasurements` | switch | off | Skip the slower disk speed/latency tests. |
 | `-parametersFile` | path | none | A file of `name value` pairs to use as defaults; command-line values still win. |
+| `-gmsaAccountName` | string | none | Name of a gMSA account to check; adds the GMSA ACCOUNT section when set. |
+| `-certificateFilePath` | path | none | Path to a certificate file to check; takes precedence over `-certificateHostname` if both are set. |
+| `-certificateHostname` | string | none | Hostname (optionally `hostname:port`) to fetch a live TLS certificate from and check. |
+| `-skipUpdateCheck` | switch | off | Skip checking GitHub for a newer release. |
 | `-version` | switch | off | Print the version and exit. |
 
 ### Parameters file format
@@ -83,7 +111,7 @@ skipDiskPerformanceMeasurements true
 ####################### REPORT INFO ########################
 Local time: 2026-08-02 10:44:26
 User: CONTOSO-SRV01\admin
-Script version: Winspect v. 0.3.0 (2026-08-02)
+Script version: Winspect v. 0.6.0 (2026-08-02)
 Running elevated: Yes
 
 ###################### HOST IDENTITY #######################
@@ -114,7 +142,38 @@ Current RAM usage: 82.7 %
 Certificate expirations:
     old.contoso-srv01.local -> expires 2022-08-06 (EXPIRED 1456 days ago)
     contoso-srv01.local -> expires 2028-12-31 (882 days)
+
+################## ADDITIONAL CERTIFICATE ##################
+gateway.contoso-srv01.local -> expires 2026-10-24 (83 days)
+
+####################### GMSA ACCOUNT #######################
+Account name: svc-myapp
+Status: Account 'svc-myapp' exists and can be used by this host
 ```
+
+(The ADDITIONAL CERTIFICATE and GMSA ACCOUNT sections only appear when their respective
+parameters are supplied.)
+
+If a newer release exists, a one-line notice prints before the report itself — it's a startup
+banner, not part of the report's content or file output:
+
+```
+A newer version of Winspect is available: v0.7.0 (you have v0.6.0). Get it at https://github.com/mortendj/winspect/releases/latest
+
+####################### REPORT INFO ########################
+...
+```
+
+## Building a release package
+
+```powershell
+.\Build-WinspectPackage.ps1
+```
+
+Packages `Invoke-Winspect.ps1`, `src/`, `README.md`, and `LICENSE` — everything needed to actually
+run the tool, nothing else — into `dist/winspect-vX.Y.Z.zip`, with the version read from
+`src/Constants.ps1`. Extract it anywhere and run `Invoke-Winspect.ps1` from inside the extracted
+`Winspect/` folder.
 
 ## Project layout
 
@@ -130,7 +189,9 @@ src/
   NetworkInfo.ps1        network adapters (excludes link-local/disconnected ones)
   CpuMemoryInfo.ps1      CPU and RAM capacity/usage
   DiskInfo.ps1           disk capacity, speed, latency
-  Certificates.ps1       certificate expirations from the local machine store
+  Certificates.ps1       certificate expirations - local machine store, plus an optional file/host
+  GmsaInfo.ps1           gMSA account existence/usability check (opt-in)
+  UpdateCheck.ps1        checks GitHub for a newer release
   ReportFormatting.ps1   page/section headers, bold-formatting, report post-processing
   ReportBuilder.ps1      assembles the report sections
   MainOrchestration.ps1  top-level run sequence

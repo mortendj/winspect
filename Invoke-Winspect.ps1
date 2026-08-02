@@ -32,6 +32,25 @@ Path to a file with parameter name/value pairs (one per line) that act as defaul
 lines starting with '#' are ignored. Command line parameters still take precedence over anything
 set in this file.
 
+.PARAMETER gmsaAccountName
+Name of a Group Managed Service Account to check. When supplied, reports whether the account
+exists in Active Directory and whether this host can use it. Requires this host to be
+domain-joined and have the ActiveDirectory module installed; otherwise reports why it can't check.
+Omitted by default, in which case this section doesn't appear at all.
+
+.PARAMETER skipUpdateCheck
+Skips checking GitHub for a newer release. The check fails silently anyway (e.g. on hosts with no
+outbound internet access), so this is only useful to avoid the network call/delay entirely.
+
+.PARAMETER certificateFilePath
+Path to a certificate file to check the expiration of, in addition to the local machine store scan
+- useful for certificates an application manages itself as a file rather than through Windows'
+certificate store. Takes precedence over -certificateHostname if both are supplied.
+
+.PARAMETER certificateHostname
+A hostname (optionally hostname:port, default port 443) to fetch a live TLS certificate from and
+check its expiration, in addition to the local machine store scan.
+
 .EXAMPLE
 .\Invoke-Winspect.ps1
 Produces a plain text report to the terminal and to the file "config.txt".
@@ -59,7 +78,18 @@ param (
    [string]$logLevel = "off",
 
    [Parameter(Mandatory=$false)]
-   [string]$parametersFile = ""
+   [string]$parametersFile = "",
+
+   [Parameter(Mandatory=$false)]
+   [string]$gmsaAccountName = "",
+
+   [switch]$skipUpdateCheck,
+
+   [Parameter(Mandatory=$false)]
+   [string]$certificateFilePath = "",
+
+   [Parameter(Mandatory=$false)]
+   [string]$certificateHostname = ""
 )
 
 # The path to this script itself, captured here (top-level of the entry-point file) because
@@ -79,6 +109,8 @@ $SRC_DIR = Join-Path $PSScriptRoot "src"
 . (Join-Path $SRC_DIR "CpuMemoryInfo.ps1")
 . (Join-Path $SRC_DIR "DiskInfo.ps1")
 . (Join-Path $SRC_DIR "Certificates.ps1")
+. (Join-Path $SRC_DIR "GmsaInfo.ps1")
+. (Join-Path $SRC_DIR "UpdateCheck.ps1")
 . (Join-Path $SRC_DIR "ReportFormatting.ps1")
 . (Join-Path $SRC_DIR "ReportBuilder.ps1")
 . (Join-Path $SRC_DIR "MainOrchestration.ps1")
@@ -88,6 +120,10 @@ $cmdline_param_VERSION                            = $adjustedParameters["version
 $cmdline_param_OUTPUT_FORMAT                      = $adjustedParameters["outputFormat"]
 $cmdline_param_OUTPUT_DESTINATION                 = $adjustedParameters["outputDestination"]
 $cmdline_param_SKIP_DISK_PERFORMANCE_MEASUREMENTS = $adjustedParameters["skipDiskPerformanceMeasurements"]
+$cmdline_param_GMSA_ACCOUNT_NAME                  = $adjustedParameters["gmsaAccountName"]
+$cmdline_param_SKIP_UPDATE_CHECK                  = $adjustedParameters["skipUpdateCheck"]
+$cmdline_param_CERTIFICATE_FILE_PATH              = $adjustedParameters["certificateFilePath"]
+$cmdline_param_CERTIFICATE_HOSTNAME               = $adjustedParameters["certificateHostname"]
 
 Initialize-OutputFormatLayout $cmdline_param_OUTPUT_FORMAT
 
