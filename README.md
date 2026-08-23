@@ -6,7 +6,7 @@ certificate expirations. It reports only on things that are true of any Windows 
 regardless of what's installed on it, so it's meant to be a reusable foundation rather than a
 one-off script.
 
-> **Status:** early, actively developed (v0.7.0). The current release covers host identity,
+> **Status:** early, actively developed (v0.8.0). The current release covers host identity,
 > network adapters, certificate expirations (local store, plus an opt-in file/host check), an
 > opt-in gMSA account check, CPU/RAM/disk capacity and usage, and an update check against GitHub
 > releases.
@@ -113,8 +113,16 @@ skipDiskPerformanceMeasurements true
 ####################### REPORT INFO ########################
 Local time: 2026-08-02 10:44:26
 User: CONTOSO-SRV01\admin
-Script version: Winspect v. 0.7.0 (2026-08-02)
+Script version: Winspect v. 0.8.0 (2026-08-23)
 Running elevated: Yes
+
+####################### CERTIFICATES #######################
+Certificate expirations:
+    old.contoso-srv01.local -> expires 2022-08-06 (EXPIRED 1456 days ago)
+    contoso-srv01.local -> expires 2028-12-31 (882 days)
+
+################## ADDITIONAL CERTIFICATE ##################
+gateway.contoso-srv01.local -> expires 2026-10-24 (83 days)
 
 ###################### HOST IDENTITY #######################
 Hostname: CONTOSO-SRV01
@@ -140,14 +148,6 @@ Disk latency:
 Current CPU load: 17 %
 Current RAM usage: 82.7 %
 
-####################### CERTIFICATES #######################
-Certificate expirations:
-    old.contoso-srv01.local -> expires 2022-08-06 (EXPIRED 1456 days ago)
-    contoso-srv01.local -> expires 2028-12-31 (882 days)
-
-################## ADDITIONAL CERTIFICATE ##################
-gateway.contoso-srv01.local -> expires 2026-10-24 (83 days)
-
 ####################### GMSA ACCOUNT #######################
 Account name: svc-myapp
 Status: Account 'svc-myapp' exists and can be used by this host
@@ -160,7 +160,7 @@ If a newer release exists, a one-line notice prints before the report itself —
 banner, not part of the report's content or file output:
 
 ```
-A newer version of Winspect is available: v0.8.0 (you have v0.7.0). Get it at https://github.com/mortendj/winspect/releases/latest
+A newer version of Winspect is available: v0.9.0 (you have v0.8.0). Get it at https://github.com/mortendj/winspect/releases/latest
 
 ####################### REPORT INFO ########################
 ...

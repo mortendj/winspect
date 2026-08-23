@@ -13,6 +13,26 @@ function New-Report() {
     )
     $output += New-SectionOutput $sectionHeading $lineScriptBlocks
 
+    # CERTIFICATES (placed early, right after REPORT INFO - expiration is short, time-sensitive
+    # information worth surfacing before the larger host identity/network/resources block below)
+    $sectionHeading = "CERTIFICATES"
+    $lineScriptBlocks = @(
+        { "Certificate expirations$FIELD_LABEL_SEPARATOR" },
+        { "$(Invoke-WithErrorHandling -ScriptBlock {Get-CertificateExpirations})" }
+    )
+    $output += New-SectionOutput $sectionHeading $lineScriptBlocks
+
+    # ADDITIONAL CERTIFICATE (only appears if -certificateFilePath or -certificateHostname was
+    # supplied - covers certificates an application manages as a file or live endpoint rather than
+    # through the Windows certificate store, which the CERTIFICATES section above can't see)
+    $sectionHeading = "ADDITIONAL CERTIFICATE"
+    if ($cmdline_param_CERTIFICATE_FILE_PATH -ne "" -or $cmdline_param_CERTIFICATE_HOSTNAME -ne "") {
+        $lineScriptBlocks = @(
+            { "$(Invoke-WithErrorHandling -ScriptBlock {Get-AdditionalCertificateExpiration $cmdline_param_CERTIFICATE_FILE_PATH $cmdline_param_CERTIFICATE_HOSTNAME})" }
+        )
+        $output += New-SectionOutput $sectionHeading $lineScriptBlocks
+    }
+
     # HOST IDENTITY
     $sectionHeading = "HOST IDENTITY"
     $lineScriptBlocks = @(
@@ -52,25 +72,6 @@ function New-Report() {
         { "Current RAM usage$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-CurrentMemoryUsage}) %" }
     )
     $output += New-SectionOutput $sectionHeading $lineScriptBlocks
-
-    # CERTIFICATES
-    $sectionHeading = "CERTIFICATES"
-    $lineScriptBlocks = @(
-        { "Certificate expirations$FIELD_LABEL_SEPARATOR" },
-        { "$(Invoke-WithErrorHandling -ScriptBlock {Get-CertificateExpirations})" }
-    )
-    $output += New-SectionOutput $sectionHeading $lineScriptBlocks
-
-    # ADDITIONAL CERTIFICATE (only appears if -certificateFilePath or -certificateHostname was
-    # supplied - covers certificates an application manages as a file or live endpoint rather than
-    # through the Windows certificate store, which the CERTIFICATES section above can't see)
-    $sectionHeading = "ADDITIONAL CERTIFICATE"
-    if ($cmdline_param_CERTIFICATE_FILE_PATH -ne "" -or $cmdline_param_CERTIFICATE_HOSTNAME -ne "") {
-        $lineScriptBlocks = @(
-            { "$(Invoke-WithErrorHandling -ScriptBlock {Get-AdditionalCertificateExpiration $cmdline_param_CERTIFICATE_FILE_PATH $cmdline_param_CERTIFICATE_HOSTNAME})" }
-        )
-        $output += New-SectionOutput $sectionHeading $lineScriptBlocks
-    }
 
     # GMSA ACCOUNT (this section only appears if -gmsaAccountName was supplied)
     $sectionHeading = "GMSA ACCOUNT"
