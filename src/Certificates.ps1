@@ -73,11 +73,40 @@ function Get-CertificateFromHostname($hostnameAndPort) {
 
 function Get-AdditionalCertificateExpiration($certificateFilePath, $certificateHostname) {
     Write-FunctionCallLog $PSBoundParameters
-    if ($certificateFilePath -ne "") {
-        $certificate = Get-CertificateFromFile $certificateFilePath
-    } else {
-        $certificate = Get-CertificateFromHostname $certificateHostname
+    # Live-over-HTTPS is the real proof that a certificate is actually the one being served, so
+    # it's tried first whenever a hostname is given - the file (if also given) is only a fallback
+    # for when the real endpoint can't be reached (app down, not installed yet, network path
+    # blocked, etc.), and which path actually produced the result below is always stated
+    # explicitly rather than silently substituted.
+    $resolvedCertificate = $null
+    $liveCheckFailureReason = $null
+    $checkedVia = $null
+
+    if ($certificateHostname -ne "") {
+        try {
+            $resolvedCertificate = Get-CertificateFromHostname $certificateHostname
+            $checkedVia = "checked live via HTTPS"
+        } catch {
+            $liveCheckFailureReason = $_.Exception.Message
+            Write-WarningLog "Live HTTPS certificate check against '$certificateHostname' failed, falling back to the certificate file if one was given: $liveCheckFailureReason"
+        }
     }
-    $commonName = $certificate.GetNameInfo([System.Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false)
-    Write-ReturnValue "$commonName -> $(Get-CertificateExpirationText $certificate)"
+
+    if ($null -eq $resolvedCertificate) {
+        if ($certificateFilePath -ne "") {
+            $resolvedCertificate = Get-CertificateFromFile $certificateFilePath
+            if ($null -ne $liveCheckFailureReason) {
+                $checkedVia = "checked via file - live HTTPS check against '$certificateHostname' failed: $liveCheckFailureReason"
+            } else {
+                $checkedVia = "checked via file"
+            }
+        } else {
+            # No file to fall back to - surface the live-check failure itself rather than letting
+            # this section silently disappear.
+            throw $liveCheckFailureReason
+        }
+    }
+
+    $commonName = $resolvedCertificate.GetNameInfo([System.Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false)
+    Write-ReturnValue "$commonName -> $(Get-CertificateExpirationText $resolvedCertificate) - $checkedVia"
 }

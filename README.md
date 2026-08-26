@@ -6,7 +6,7 @@ certificate expirations. It reports only on things that are true of any Windows 
 regardless of what's installed on it, so it's meant to be a reusable foundation rather than a
 one-off script.
 
-> **Status:** early, actively developed (v0.8.0). The current release covers host identity,
+> **Status:** early, actively developed (v0.9.0). The current release covers host identity,
 > network adapters, certificate expirations (local store, plus an opt-in file/host check), an
 > opt-in gMSA account check, CPU/RAM/disk capacity and usage, and an update check against GitHub
 > releases.
@@ -30,7 +30,10 @@ one-off script.
 - **Additional certificate check** (opt-in, needs a file path or hostname): checks the expiration
   of a certificate the local machine store scan above can't see — one an application manages
   itself as a file, or one served live by a specific host, rather than one registered in Windows'
-  own certificate store.
+  own certificate store. If both a hostname and a file are given, the live HTTPS check is tried
+  first (proof of what's actually being served right now) and the file is only used as a fallback
+  if that fails (app down, not installed yet, network path blocked, etc.) — the report always
+  states which of the two actually produced the result, and why, if it fell back.
 - **gMSA account check** (opt-in, needs a name): whether a named Group Managed Service Account
   exists in Active Directory and whether this host can actually retrieve/use it. Accepts either a
   bare account name or a `DOMAIN\name` form — the domain prefix is stripped before the lookup, since
@@ -83,6 +86,9 @@ one-off script.
 # Also check the expiration of a specific certificate file or live endpoint
 .\Invoke-Winspect.ps1 -certificateFilePath "C:\certs\gateway.crt"
 .\Invoke-Winspect.ps1 -certificateHostname "example.com:443"
+
+# Check the live endpoint, falling back to the file if the endpoint isn't reachable
+.\Invoke-Winspect.ps1 -certificateHostname "example.com:443" -certificateFilePath "C:\certs\gateway.crt"
 ```
 
 | Parameter | Values | Default | Description |
@@ -93,8 +99,8 @@ one-off script.
 | `-skipDiskPerformanceMeasurements` | switch | off | Skip the slower disk speed/latency tests. |
 | `-parametersFile` | path | none | A file of `name value` pairs to use as defaults; command-line values still win. |
 | `-gmsaAccountName` | string | none | Name of a gMSA account to check; adds the GMSA ACCOUNT section when set. |
-| `-certificateFilePath` | path | none | Path to a certificate file to check; takes precedence over `-certificateHostname` if both are set. |
-| `-certificateHostname` | string | none | Hostname (optionally `hostname:port`) to fetch a live TLS certificate from and check. |
+| `-certificateFilePath` | path | none | Path to a certificate file to check. Used as a fallback if `-certificateHostname` is also set and its live check fails. |
+| `-certificateHostname` | string | none | Hostname (optionally `hostname:port`) to fetch a live TLS certificate from and check. Tried first if `-certificateFilePath` is also set. |
 | `-skipUpdateCheck` | switch | off | Skip checking GitHub for a newer release. |
 | `-version` | switch | off | Print the version and exit. |
 
@@ -113,7 +119,7 @@ skipDiskPerformanceMeasurements true
 ####################### REPORT INFO ########################
 Local time: 2026-08-02 10:44:26
 User: CONTOSO-SRV01\admin
-Script version: Winspect v. 0.8.0 (2026-08-23)
+Script version: Winspect v. 0.9.0 (2026-08-26)
 Running elevated: Yes
 
 ####################### CERTIFICATES #######################
@@ -122,7 +128,7 @@ Certificate expirations:
     contoso-srv01.local -> expires 2028-12-31 (882 days)
 
 ################## ADDITIONAL CERTIFICATE ##################
-gateway.contoso-srv01.local -> expires 2026-10-24 (83 days)
+gateway.contoso-srv01.local -> expires 2026-10-24 (83 days) - checked live via HTTPS
 
 ###################### HOST IDENTITY #######################
 Hostname: CONTOSO-SRV01

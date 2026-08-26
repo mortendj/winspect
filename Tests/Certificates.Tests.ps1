@@ -33,7 +33,7 @@ Describe "Get-AdditionalCertificateExpiration" {
     # not X509Certificate2/TcpClient/SslStream directly - those are the real I/O boundary, only
     # exercised for real against an actual file or live endpoint.
 
-    It "checks the file when a certificate file path is supplied" {
+    It "checks the file when only a certificate file path is supplied" {
         $certificate = New-FakeCertificate "from-file.example.com" (Get-Date).AddDays(30)
         Mock Get-CertificateFromFile { $certificate }
         Mock Get-CertificateFromHostname { throw "should not be called" }
@@ -41,9 +41,10 @@ Describe "Get-AdditionalCertificateExpiration" {
         $result = Get-AdditionalCertificateExpiration "C:\some\cert.crt" ""
 
         $result | Should -Match "from-file\.example\.com"
+        $result | Should -Match "checked via file$"
     }
 
-    It "checks the hostname when no file path is supplied" {
+    It "checks the hostname when only a hostname is supplied" {
         $certificate = New-FakeCertificate "from-host.example.com" (Get-Date).AddDays(30)
         Mock Get-CertificateFromFile { throw "should not be called" }
         Mock Get-CertificateFromHostname { $certificate }
@@ -51,6 +52,36 @@ Describe "Get-AdditionalCertificateExpiration" {
         $result = Get-AdditionalCertificateExpiration "" "from-host.example.com:443"
 
         $result | Should -Match "from-host\.example\.com"
+        $result | Should -Match "checked live via HTTPS$"
+    }
+
+    It "prefers the live hostname check over the file when both are supplied and the live check succeeds" {
+        $certificate = New-FakeCertificate "from-host.example.com" (Get-Date).AddDays(30)
+        Mock Get-CertificateFromHostname { $certificate }
+        Mock Get-CertificateFromFile { throw "should not be called" }
+
+        $result = Get-AdditionalCertificateExpiration "C:\some\cert.crt" "from-host.example.com:443"
+
+        $result | Should -Match "from-host\.example\.com"
+        $result | Should -Match "checked live via HTTPS$"
+    }
+
+    It "falls back to the file, and says so, when the live hostname check fails and a file is also given" {
+        $certificate = New-FakeCertificate "from-file.example.com" (Get-Date).AddDays(30)
+        Mock Get-CertificateFromHostname { throw "connection refused" }
+        Mock Get-CertificateFromFile { $certificate }
+
+        $result = Get-AdditionalCertificateExpiration "C:\some\cert.crt" "unreachable.example.com:443"
+
+        $result | Should -Match "from-file\.example\.com"
+        $result | Should -Match "checked via file - live HTTPS check against 'unreachable\.example\.com:443' failed: connection refused"
+    }
+
+    It "surfaces the live check failure as an error when it fails and no file was given to fall back to" {
+        Mock Get-CertificateFromHostname { throw "connection refused" }
+        Mock Get-CertificateFromFile { throw "should not be called" }
+
+        { Get-AdditionalCertificateExpiration "" "unreachable.example.com:443" } | Should -Throw "connection refused"
     }
 }
 

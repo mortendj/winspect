@@ -47,11 +47,15 @@ outbound internet access), so this is only useful to avoid the network call/dela
 .PARAMETER certificateFilePath
 Path to a certificate file to check the expiration of, in addition to the local machine store scan
 - useful for certificates an application manages itself as a file rather than through Windows'
-certificate store. Takes precedence over -certificateHostname if both are supplied.
+certificate store. If -certificateHostname is also supplied, this is only used as a fallback if the
+live HTTPS check fails (app down, not installed yet, network path blocked, etc.) - the report
+always states which of the two actually produced the result.
 
 .PARAMETER certificateHostname
 A hostname (optionally hostname:port, default port 443) to fetch a live TLS certificate from and
-check its expiration, in addition to the local machine store scan.
+check its expiration, in addition to the local machine store scan. Tried first if -certificateFilePath
+is also supplied, since a live check is proof of what's actually being served right now rather than
+just what a file on disk happens to contain.
 
 .EXAMPLE
 .\Invoke-Winspect.ps1
