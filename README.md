@@ -6,7 +6,7 @@ certificate expirations. It reports only on things that are true of any Windows 
 regardless of what's installed on it, so it's meant to be a reusable foundation rather than a
 one-off script.
 
-> **Status:** early, actively developed (v0.9.0). The current release covers host identity,
+> **Status:** early, actively developed (v0.10.0). The current release covers host identity,
 > network adapters, certificate expirations (local store, plus an opt-in file/host check), an
 > opt-in gMSA account check, CPU/RAM/disk capacity and usage, and an update check against GitHub
 > releases.
@@ -33,7 +33,8 @@ one-off script.
   own certificate store. If both a hostname and a file are given, the live HTTPS check is tried
   first (proof of what's actually being served right now) and the file is only used as a fallback
   if that fails (app down, not installed yet, network path blocked, etc.) — the report always
-  states which of the two actually produced the result, and why, if it fell back.
+  states which of the two actually produced the result, and why, if it fell back. The section
+  title itself defaults to "ADDITIONAL CERTIFICATE" but can be overridden.
 - **gMSA account check** (opt-in, needs a name): whether a named Group Managed Service Account
   exists in Active Directory and whether this host can actually retrieve/use it. Accepts either a
   bare account name or a `DOMAIN\name` form — the domain prefix is stripped before the lookup, since
@@ -89,6 +90,9 @@ one-off script.
 
 # Check the live endpoint, falling back to the file if the endpoint isn't reachable
 .\Invoke-Winspect.ps1 -certificateHostname "example.com:443" -certificateFilePath "C:\certs\gateway.crt"
+
+# Give the additional certificate check a more specific section title
+.\Invoke-Winspect.ps1 -certificateHostname "example.com:443" -certificateSectionLabel "GATEWAY CERTIFICATE"
 ```
 
 | Parameter | Values | Default | Description |
@@ -101,6 +105,7 @@ one-off script.
 | `-gmsaAccountName` | string | none | Name of a gMSA account to check; adds the GMSA ACCOUNT section when set. |
 | `-certificateFilePath` | path | none | Path to a certificate file to check. Used as a fallback if `-certificateHostname` is also set and its live check fails. |
 | `-certificateHostname` | string | none | Hostname (optionally `hostname:port`) to fetch a live TLS certificate from and check. Tried first if `-certificateFilePath` is also set. |
+| `-certificateSectionLabel` | string | `ADDITIONAL CERTIFICATE` | Section heading for the additional certificate check; only relevant when `-certificateFilePath` or `-certificateHostname` is set. |
 | `-skipUpdateCheck` | switch | off | Skip checking GitHub for a newer release. |
 | `-version` | switch | off | Print the version and exit. |
 
@@ -119,7 +124,7 @@ skipDiskPerformanceMeasurements true
 ####################### REPORT INFO ########################
 Local time: 2026-08-02 10:44:26
 User: CONTOSO-SRV01\admin
-Script version: Winspect v. 0.9.0 (2026-08-26)
+Script version: Winspect v. 0.10.0 (2026-08-26)
 Running elevated: Yes
 
 ####################### CERTIFICATES #######################
@@ -166,7 +171,7 @@ If a newer release exists, a one-line notice prints before the report itself —
 banner, not part of the report's content or file output:
 
 ```
-A newer version of Winspect is available: v0.9.0 (you have v0.8.0). Get it at https://github.com/mortendj/winspect/releases/latest
+A newer version of Winspect is available: v0.11.0 (you have v0.10.0). Get it at https://github.com/mortendj/winspect/releases/latest
 
 ####################### REPORT INFO ########################
 ...

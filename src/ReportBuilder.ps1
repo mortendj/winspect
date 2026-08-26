@@ -25,7 +25,7 @@ function New-Report() {
     # ADDITIONAL CERTIFICATE (only appears if -certificateFilePath or -certificateHostname was
     # supplied - covers certificates an application manages as a file or live endpoint rather than
     # through the Windows certificate store, which the CERTIFICATES section above can't see)
-    $sectionHeading = "ADDITIONAL CERTIFICATE"
+    $sectionHeading = $cmdline_param_CERTIFICATE_SECTION_LABEL
     if ($cmdline_param_CERTIFICATE_FILE_PATH -ne "" -or $cmdline_param_CERTIFICATE_HOSTNAME -ne "") {
         $lineScriptBlocks = @(
             { "$(Invoke-WithErrorHandling -ScriptBlock {Get-AdditionalCertificateExpiration $cmdline_param_CERTIFICATE_FILE_PATH $cmdline_param_CERTIFICATE_HOSTNAME})" }

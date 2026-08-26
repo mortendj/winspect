@@ -57,6 +57,12 @@ check its expiration, in addition to the local machine store scan. Tried first i
 is also supplied, since a live check is proof of what's actually being served right now rather than
 just what a file on disk happens to contain.
 
+.PARAMETER certificateSectionLabel
+Section heading to use for the additional certificate check (only relevant when -certificateFilePath
+or -certificateHostname is supplied). Defaults to "ADDITIONAL CERTIFICATE" - override this when the
+certificate being checked has a more specific name worth calling out in the report (e.g. the name of
+the application it belongs to).
+
 .EXAMPLE
 .\Invoke-Winspect.ps1
 Produces a plain text report to the terminal and to the file "config.txt".
@@ -95,7 +101,10 @@ param (
    [string]$certificateFilePath = "",
 
    [Parameter(Mandatory=$false)]
-   [string]$certificateHostname = ""
+   [string]$certificateHostname = "",
+
+   [Parameter(Mandatory=$false)]
+   [string]$certificateSectionLabel = "ADDITIONAL CERTIFICATE"
 )
 
 # The path to this script itself, captured here (top-level of the entry-point file) because
@@ -130,6 +139,7 @@ $cmdline_param_GMSA_ACCOUNT_NAME                  = $adjustedParameters["gmsaAcc
 $cmdline_param_SKIP_UPDATE_CHECK                  = $adjustedParameters["skipUpdateCheck"]
 $cmdline_param_CERTIFICATE_FILE_PATH              = $adjustedParameters["certificateFilePath"]
 $cmdline_param_CERTIFICATE_HOSTNAME               = $adjustedParameters["certificateHostname"]
+$cmdline_param_CERTIFICATE_SECTION_LABEL          = $adjustedParameters["certificateSectionLabel"]
 
 Initialize-OutputFormatLayout $cmdline_param_OUTPUT_FORMAT
 
