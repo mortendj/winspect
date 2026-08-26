@@ -8,7 +8,7 @@ function New-Report() {
     $lineScriptBlocks = @(
         { "Local time$FIELD_LABEL_SEPARATOR$(Get-LocalTime)" },
         { "User$FIELD_LABEL_SEPARATOR$(Get-UserWithDomain)" },
-        { "Script version$FIELD_LABEL_SEPARATOR$VERSION_STRING" },
+        { "Winspect version$FIELD_LABEL_SEPARATOR$SCRIPT_VERSION ($VERSION_TIMESTAMP)" },
         { "Running elevated$FIELD_LABEL_SEPARATOR$(if (Invoke-WithErrorHandling -ScriptBlock {Test-AdminRights}) { 'Yes' } else { 'No' })" }
     )
     $output += New-SectionOutput $sectionHeading $lineScriptBlocks
