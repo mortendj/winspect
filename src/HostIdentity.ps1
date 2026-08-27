@@ -32,6 +32,26 @@ function Get-VirtualizationStatus() {
     }
 }
 
+function Get-VMwareToolsVersion() {
+    Write-FunctionCallLog $PSBoundParameters
+    # Registry-based, not the Win32_Product WMI query some tools use to get this - that class is
+    # known to trigger a reconfiguration pass over every MSI-installed package on the machine,
+    # which can hang for minutes on a busy host. The registry uninstall keys expose the same
+    # version info without touching MSI at all.
+    if ((Get-VirtualizationStatus) -like "*VMware*") {
+        $vmwareToolsVersion = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue |
+            Where-Object { $_.DisplayName -like "VMware Tools*" } |
+            Select-Object -ExpandProperty DisplayVersion -First 1
+        if ($vmwareToolsVersion) {
+            Write-ReturnValue $vmwareToolsVersion
+        } else {
+            Write-ReturnValue "Not installed"
+        }
+    } else {
+        Write-ReturnValue "N/A"
+    }
+}
+
 function Test-AdminRights() {
     Write-FunctionCallLog $PSBoundParameters
     $currentIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()

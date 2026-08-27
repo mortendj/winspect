@@ -65,6 +65,42 @@ Describe "Get-VirtualizationStatus" {
     }
 }
 
+Describe "Get-VMwareToolsVersion" {
+    It "reads the installed version from the registry when running under VMware" {
+        Mock Get-MyWmiObject {
+            [pscustomobject]@{ Manufacturer = "VMware, Inc."; Model = "VMware Virtual Platform" }
+        } -ParameterFilter { $className -eq "Win32_ComputerSystem" }
+        Mock Get-ItemProperty {
+            @(
+                [pscustomobject]@{ DisplayName = "Some Other App"; DisplayVersion = "1.0.0" },
+                [pscustomobject]@{ DisplayName = "VMware Tools"; DisplayVersion = "12.3.5.22544099" }
+            )
+        }
+
+        Get-VMwareToolsVersion | Should -Be "12.3.5.22544099"
+    }
+
+    It "returns 'Not installed' when running under VMware but no VMware Tools entry is found" {
+        Mock Get-MyWmiObject {
+            [pscustomobject]@{ Manufacturer = "VMware, Inc."; Model = "VMware Virtual Platform" }
+        } -ParameterFilter { $className -eq "Win32_ComputerSystem" }
+        Mock Get-ItemProperty {
+            @([pscustomobject]@{ DisplayName = "Some Other App"; DisplayVersion = "1.0.0" })
+        }
+
+        Get-VMwareToolsVersion | Should -Be "Not installed"
+    }
+
+    It "returns 'N/A' without touching the registry when not running under VMware" {
+        Mock Get-MyWmiObject {
+            [pscustomobject]@{ Manufacturer = "Microsoft Corporation"; Model = "Virtual Machine" }
+        } -ParameterFilter { $className -eq "Win32_ComputerSystem" }
+        Mock Get-ItemProperty { throw "should not be called" }
+
+        Get-VMwareToolsVersion | Should -Be "N/A"
+    }
+}
+
 Describe "Test-AdminRights" {
     It "returns a boolean without throwing" {
         # Whether the test run happens to be elevated varies by environment - only the type

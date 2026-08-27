@@ -6,7 +6,7 @@ certificate expirations. It reports only on things that are true of any Windows 
 regardless of what's installed on it, so it's meant to be a reusable foundation rather than a
 one-off script.
 
-> **Status:** early, actively developed (v0.14.0). The current release covers host identity,
+> **Status:** early, actively developed (v0.15.0). The current release covers host identity,
 > network adapters, certificate expirations (local store, plus an opt-in file/host check), an
 > opt-in gMSA account check, CPU/RAM/disk capacity and usage, and an update check against GitHub
 > releases.
@@ -14,8 +14,10 @@ one-off script.
 ## Features
 
 - **Host identity:** fully-qualified hostname (falls back to the short name on a host with no
-  resolvable domain suffix), OS version/build, machine ID (SMBIOS UUID), and virtual-machine
-  detection (VMware/Hyper-V/VirtualBox/KVM/QEMU/Xen).
+  resolvable domain suffix), OS version/build, machine ID (SMBIOS UUID), virtual-machine
+  detection (VMware/Hyper-V/VirtualBox/KVM/QEMU/Xen), and — on a VMware guest — the installed
+  VMware Tools version (read from the registry, not a `Win32_Product` WMI query, which is known to
+  trigger a slow MSI reconfiguration pass across every installed package on the machine).
 - **Network adapters:** name, IP address, and network category (Public/Private/Domain) for each
   adapter that's actually connected — link-local (APIPA) addresses and adapters with no network
   category at all (both signs of a virtualization-internal adapter, not a real connection) are
@@ -128,7 +130,7 @@ skipDiskPerformanceMeasurements true
 ####################### REPORT INFO ########################
 Local time: 2026-08-02 10:44:26
 User: CONTOSO-SRV01\admin
-Winspect version: 0.14.0 (2026-08-27)
+Winspect version: 0.15.0 (2026-08-27)
 Running elevated: Yes
 
 ####################### CERTIFICATES #######################
@@ -144,6 +146,7 @@ Hostname: CONTOSO-SRV01.contoso.local
 Operating system: Microsoft Windows Server 2022 Standard (10.0.20348, build 20348)
 Machine ID: CDF27266-0D99-42DB-9685-5AF465383592
 Virtualization: Bare metal (or undetected virtualization platform)
+VMware Tools version: N/A
 
 ######################### NETWORK ##########################
 Network adapters:
@@ -175,7 +178,7 @@ If a newer release exists, a one-line notice prints before the report itself —
 banner, not part of the report's content or file output:
 
 ```
-A newer version of Winspect is available: v0.15.0 (you have v0.14.0). Get it at https://github.com/mortendj/winspect/releases/latest
+A newer version of Winspect is available: v0.16.0 (you have v0.15.0). Get it at https://github.com/mortendj/winspect/releases/latest
 
 ####################### REPORT INFO ########################
 ...

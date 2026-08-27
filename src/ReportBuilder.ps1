@@ -39,7 +39,8 @@ function New-Report() {
         { "Hostname$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-HostName})" },
         { "Operating system$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-OperatingSystemVersion})" },
         { "Machine ID$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-MachineId})" },
-        { "Virtualization$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-VirtualizationStatus})" }
+        { "Virtualization$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-VirtualizationStatus})" },
+        { "VMware Tools version$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-VMwareToolsVersion})" }
     )
     $output += New-SectionOutput $sectionHeading $lineScriptBlocks
 
