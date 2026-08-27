@@ -28,7 +28,7 @@ function New-Report() {
     $sectionHeading = $cmdline_param_CERTIFICATE_SECTION_LABEL
     if ($cmdline_param_CERTIFICATE_FILE_PATH -ne "" -or $cmdline_param_CERTIFICATE_HOSTNAME -ne "") {
         $lineScriptBlocks = @(
-            { "$(Invoke-WithErrorHandling -ScriptBlock {Get-AdditionalCertificateExpiration $cmdline_param_CERTIFICATE_FILE_PATH $cmdline_param_CERTIFICATE_HOSTNAME})" }
+            { "$(Invoke-WithErrorHandling -ScriptBlock {Get-AdditionalCertificateInfo $cmdline_param_CERTIFICATE_FILE_PATH $cmdline_param_CERTIFICATE_HOSTNAME})" }
         )
         $output += New-SectionOutput $sectionHeading $lineScriptBlocks
     }

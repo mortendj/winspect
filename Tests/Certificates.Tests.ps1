@@ -6,8 +6,8 @@ BeforeAll {
     . "$PSScriptRoot/../src/Utilities.ps1"
     . "$PSScriptRoot/../src/Certificates.ps1"
 
-    function New-FakeCertificate($commonName, $notAfter, $hasPrivateKey = $true) {
-        $certificate = [pscustomobject]@{ NotAfter = $notAfter; HasPrivateKey = $hasPrivateKey }
+    function New-FakeCertificate($commonName, $notAfter, $hasPrivateKey = $true, $issuer = "CN=Test CA") {
+        $certificate = [pscustomobject]@{ NotAfter = $notAfter; HasPrivateKey = $hasPrivateKey; Issuer = $issuer }
         # GetNameInfo needs to be a closure over $commonName, since by the time it's actually
         # invoked (inside Get-CertificateExpirations), this function's own scope is long gone.
         $getNameInfo = { param($nameType, $forIssuer) return $commonName }.GetNewClosure()
@@ -28,7 +28,7 @@ Describe "Get-CertificateExpirationText" {
     }
 }
 
-Describe "Get-AdditionalCertificateExpiration" {
+Describe "Get-AdditionalCertificateInfo" {
     # Mocks Winspect's own wrapper functions (Get-CertificateFromFile/Get-CertificateFromHostname),
     # not X509Certificate2/TcpClient/SslStream directly - those are the real I/O boundary, only
     # exercised for real against an actual file or live endpoint.
@@ -38,7 +38,7 @@ Describe "Get-AdditionalCertificateExpiration" {
         Mock Get-CertificateFromFile { $certificate }
         Mock Get-CertificateFromHostname { throw "should not be called" }
 
-        $result = Get-AdditionalCertificateExpiration "C:\some\cert.crt" ""
+        $result = Get-AdditionalCertificateInfo "C:\some\cert.crt" ""
 
         $result | Should -Match "from-file\.example\.com"
         $result | Should -Match "checked via file$"
@@ -49,21 +49,40 @@ Describe "Get-AdditionalCertificateExpiration" {
         Mock Get-CertificateFromFile { throw "should not be called" }
         Mock Get-CertificateFromHostname { $certificate }
 
-        $result = Get-AdditionalCertificateExpiration "" "from-host.example.com:443"
+        $result = Get-AdditionalCertificateInfo "" "from-host.example.com:443"
 
         $result | Should -Match "from-host\.example\.com"
         $result | Should -Match "checked live via HTTPS$"
     }
 
-    It "prefers the live hostname check over the file when both are supplied and the live check succeeds" {
-        $certificate = New-FakeCertificate "from-host.example.com" (Get-Date).AddDays(30)
-        Mock Get-CertificateFromHostname { $certificate }
-        Mock Get-CertificateFromFile { throw "should not be called" }
+    It "checks both and reports a clean match when the live and file certificates have the same issuer" {
+        $liveCertificate = New-FakeCertificate "engine.example.com" (Get-Date).AddDays(30) -issuer "CN=Real CA"
+        $fileCertificate = New-FakeCertificate "engine.example.com" (Get-Date).AddDays(30) -issuer "CN=Real CA"
+        Mock Get-CertificateFromHostname { $liveCertificate }
+        Mock Get-CertificateFromFile { $fileCertificate }
 
-        $result = Get-AdditionalCertificateExpiration "C:\some\cert.crt" "from-host.example.com:443"
+        $result = Get-AdditionalCertificateInfo "C:\some\cert.crt" "engine.example.com:443"
 
-        $result | Should -Match "from-host\.example\.com"
-        $result | Should -Match "checked live via HTTPS$"
+        $result | Should -Match "engine\.example\.com"
+        $result | Should -Match "checked live via HTTPS \(issuer matches the certificate file\)$"
+        $result | Should -Not -Match "mismatch"
+    }
+
+    It "flags a mismatch when the live and file certificates have different issuers (e.g. a TLS-inspecting proxy)" {
+        # Regression test for a real finding on a customer host: a local security proxy (ESET SSL
+        # Filter) re-signed the live-fetched certificate with its own issuer, while the actual
+        # gateway certificate file was signed by a real CA - same expiration date on both, so
+        # comparing only expiration would have missed this entirely.
+        $liveCertificate = New-FakeCertificate "engine.example.com" (Get-Date).AddDays(30) -issuer "CN=ESET SSL Filter CA"
+        $fileCertificate = New-FakeCertificate "engine.example.com" (Get-Date).AddDays(30) -issuer "CN=Real CA"
+        Mock Get-CertificateFromHostname { $liveCertificate }
+        Mock Get-CertificateFromFile { $fileCertificate }
+
+        $result = Get-AdditionalCertificateInfo "C:\some\cert.crt" "engine.example.com:443"
+
+        $result | Should -Match "Certificate mismatch"
+        $result | Should -Match "Live \(HTTPS\)$([regex]::Escape($FIELD_LABEL_SEPARATOR))engine\.example\.com.*issued by CN=ESET SSL Filter CA"
+        $result | Should -Match "File$([regex]::Escape($FIELD_LABEL_SEPARATOR))engine\.example\.com.*issued by CN=Real CA"
     }
 
     It "falls back to the file, and says so, when the live hostname check fails and a file is also given" {
@@ -71,17 +90,28 @@ Describe "Get-AdditionalCertificateExpiration" {
         Mock Get-CertificateFromHostname { throw "connection refused" }
         Mock Get-CertificateFromFile { $certificate }
 
-        $result = Get-AdditionalCertificateExpiration "C:\some\cert.crt" "unreachable.example.com:443"
+        $result = Get-AdditionalCertificateInfo "C:\some\cert.crt" "unreachable.example.com:443"
 
         $result | Should -Match "from-file\.example\.com"
         $result | Should -Match "checked via file - live HTTPS check against 'unreachable\.example\.com:443' failed: connection refused"
     }
 
-    It "surfaces the live check failure as an error when it fails and no file was given to fall back to" {
-        Mock Get-CertificateFromHostname { throw "connection refused" }
-        Mock Get-CertificateFromFile { throw "should not be called" }
+    It "falls back to the live result, and says so, when the file check fails and a hostname is also given" {
+        $certificate = New-FakeCertificate "from-host.example.com" (Get-Date).AddDays(30)
+        Mock Get-CertificateFromHostname { $certificate }
+        Mock Get-CertificateFromFile { throw "file not found" }
 
-        { Get-AdditionalCertificateExpiration "" "unreachable.example.com:443" } | Should -Throw "connection refused"
+        $result = Get-AdditionalCertificateInfo "C:\missing\cert.crt" "from-host.example.com:443"
+
+        $result | Should -Match "from-host\.example\.com"
+        $result | Should -Match "checked live via HTTPS - certificate file check failed: file not found"
+    }
+
+    It "surfaces both failures as an error when neither the live check nor the file check succeeds" {
+        Mock Get-CertificateFromHostname { throw "connection refused" }
+        Mock Get-CertificateFromFile { throw "file not found" }
+
+        { Get-AdditionalCertificateInfo "C:\missing\cert.crt" "unreachable.example.com:443" } | Should -Throw "*connection refused*file not found*"
     }
 }
 

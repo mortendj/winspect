@@ -71,42 +71,89 @@ function Get-CertificateFromHostname($hostnameAndPort) {
     Write-ReturnValue $certificate
 }
 
-function Get-AdditionalCertificateExpiration($certificateFilePath, $certificateHostname) {
+function Get-CertificateSummaryLine($certificate, $checkedVia) {
     Write-FunctionCallLog $PSBoundParameters
-    # Live-over-HTTPS is the real proof that a certificate is actually the one being served, so
-    # it's tried first whenever a hostname is given - the file (if also given) is only a fallback
-    # for when the real endpoint can't be reached (app down, not installed yet, network path
-    # blocked, etc.), and which path actually produced the result below is always stated
-    # explicitly rather than silently substituted.
-    $resolvedCertificate = $null
+    $commonName = $certificate.GetNameInfo([System.Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false)
+    Write-ReturnValue "$commonName -> $(Get-CertificateExpirationText $certificate) - $checkedVia"
+}
+
+function Get-CertificateComparisonText($liveCertificate, $fileCertificate) {
+    Write-FunctionCallLog $PSBoundParameters
+    if ($liveCertificate.Issuer -eq $fileCertificate.Issuer) {
+        Write-ReturnValue (Get-CertificateSummaryLine $liveCertificate "checked live via HTTPS (issuer matches the certificate file)")
+    } else {
+        # A live-vs-file issuer mismatch is a real, actionable signal - most commonly a TLS-
+        # inspecting proxy (corporate antivirus/firewall) re-signing outbound HTTPS traffic on
+        # this host, which silently makes the live check see a different certificate than what a
+        # real external client actually gets. Confirmed on a real customer host: the live check
+        # returned an "ESET SSL Filter CA"-issued certificate, not the real one from the file -
+        # expiration dates happened to match (these proxies often preserve them), which would have
+        # hidden the mismatch entirely if only the expiration were compared instead of the issuer.
+        $liveCommonName = $liveCertificate.GetNameInfo([System.Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false)
+        $fileCommonName = $fileCertificate.GetNameInfo([System.Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false)
+        $lines = @(
+            "Certificate mismatch (possible TLS interception, e.g. a corporate security proxy) - the certificate served live via HTTPS does not match the certificate file",
+            "Live (HTTPS)$FIELD_LABEL_SEPARATOR$liveCommonName -> $(Get-CertificateExpirationText $liveCertificate), issued by $($liveCertificate.Issuer)",
+            "File$FIELD_LABEL_SEPARATOR$fileCommonName -> $(Get-CertificateExpirationText $fileCertificate), issued by $($fileCertificate.Issuer)"
+        )
+        Write-ReturnValue ($lines -join $LOGICAL_NEWLINE)
+    }
+}
+
+function Get-AdditionalCertificateInfo($certificateFilePath, $certificateHostname) {
+    Write-FunctionCallLog $PSBoundParameters
+    # Both are checked whenever both are given, not just the live one with the file as a fallback -
+    # a live-only check can't detect a host where a local TLS-inspecting proxy silently substitutes
+    # its own certificate for outbound HTTPS (see Get-CertificateComparisonText), and only checking
+    # both together can surface that.
+    # Deliberately not named $liveCertificate/$fileCertificate - Pester's Mock scriptblocks for
+    # Get-CertificateFromHostname/Get-CertificateFromFile resolve free variable references via
+    # PowerShell's dynamic scoping, which found *this function's own* (still-null-at-call-time)
+    # local variable instead of the test's intended fixture when both used that exact name -
+    # confirmed by a real test failure this caused. See the identical lesson already documented in
+    # [[project_ayfieinspector]]'s SagaCertificateInfo.ps1 history - the general rule is: never
+    # reuse a variable name between a test fixture and the function under test.
+    $resolvedLiveCertificate = $null
+    $resolvedFileCertificate = $null
     $liveCheckFailureReason = $null
-    $checkedVia = $null
+    $fileCheckFailureReason = $null
 
     if ($certificateHostname -ne "") {
         try {
-            $resolvedCertificate = Get-CertificateFromHostname $certificateHostname
-            $checkedVia = "checked live via HTTPS"
+            $resolvedLiveCertificate = Get-CertificateFromHostname $certificateHostname
         } catch {
             $liveCheckFailureReason = $_.Exception.Message
-            Write-WarningLog "Live HTTPS certificate check against '$certificateHostname' failed, falling back to the certificate file if one was given: $liveCheckFailureReason"
+            Write-WarningLog "Live HTTPS certificate check against '$certificateHostname' failed: $liveCheckFailureReason"
         }
     }
 
-    if ($null -eq $resolvedCertificate) {
-        if ($certificateFilePath -ne "") {
-            $resolvedCertificate = Get-CertificateFromFile $certificateFilePath
-            if ($null -ne $liveCheckFailureReason) {
-                $checkedVia = "checked via file - live HTTPS check against '$certificateHostname' failed: $liveCheckFailureReason"
-            } else {
-                $checkedVia = "checked via file"
-            }
-        } else {
-            # No file to fall back to - surface the live-check failure itself rather than letting
-            # this section silently disappear.
-            throw $liveCheckFailureReason
+    if ($certificateFilePath -ne "") {
+        try {
+            $resolvedFileCertificate = Get-CertificateFromFile $certificateFilePath
+        } catch {
+            $fileCheckFailureReason = $_.Exception.Message
+            Write-WarningLog "Certificate file check against '$certificateFilePath' failed: $fileCheckFailureReason"
         }
     }
 
-    $commonName = $resolvedCertificate.GetNameInfo([System.Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false)
-    Write-ReturnValue "$commonName -> $(Get-CertificateExpirationText $resolvedCertificate) - $checkedVia"
+    if ($null -ne $resolvedLiveCertificate -and $null -ne $resolvedFileCertificate) {
+        Write-ReturnValue (Get-CertificateComparisonText $resolvedLiveCertificate $resolvedFileCertificate)
+    } elseif ($null -ne $resolvedLiveCertificate) {
+        $checkedVia = "checked live via HTTPS"
+        if ($null -ne $fileCheckFailureReason) {
+            $checkedVia += " - certificate file check failed: $fileCheckFailureReason"
+        }
+        Write-ReturnValue (Get-CertificateSummaryLine $resolvedLiveCertificate $checkedVia)
+    } elseif ($null -ne $resolvedFileCertificate) {
+        $checkedVia = "checked via file"
+        if ($null -ne $liveCheckFailureReason) {
+            $checkedVia += " - live HTTPS check against '$certificateHostname' failed: $liveCheckFailureReason"
+        }
+        Write-ReturnValue (Get-CertificateSummaryLine $resolvedFileCertificate $checkedVia)
+    } else {
+        # Neither check produced a certificate - surface a failure rather than letting this
+        # section silently disappear.
+        $failureReasons = @($liveCheckFailureReason, $fileCheckFailureReason) | Where-Object { $_ }
+        throw ($failureReasons -join "; ")
+    }
 }
