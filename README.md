@@ -6,7 +6,7 @@ certificate expirations. It reports only on things that are true of any Windows 
 regardless of what's installed on it, so it's meant to be a reusable foundation rather than a
 one-off script.
 
-> **Status:** early, actively developed (v0.12.0). The current release covers host identity,
+> **Status:** early, actively developed (v0.13.0). The current release covers host identity,
 > network adapters, certificate expirations (local store, plus an opt-in file/host check), an
 > opt-in gMSA account check, CPU/RAM/disk capacity and usage, and an update check against GitHub
 > releases.
@@ -127,7 +127,7 @@ skipDiskPerformanceMeasurements true
 ####################### REPORT INFO ########################
 Local time: 2026-08-02 10:44:26
 User: CONTOSO-SRV01\admin
-Winspect version: 0.12.0 (2026-08-27)
+Winspect version: 0.13.0 (2026-08-27)
 Running elevated: Yes
 
 ####################### CERTIFICATES #######################
@@ -174,7 +174,7 @@ If a newer release exists, a one-line notice prints before the report itself —
 banner, not part of the report's content or file output:
 
 ```
-A newer version of Winspect is available: v0.13.0 (you have v0.12.0). Get it at https://github.com/mortendj/winspect/releases/latest
+A newer version of Winspect is available: v0.14.0 (you have v0.13.0). Get it at https://github.com/mortendj/winspect/releases/latest
 
 ####################### REPORT INFO ########################
 ...

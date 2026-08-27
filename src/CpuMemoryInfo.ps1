@@ -17,7 +17,11 @@ function Get-CurrentCpuUsage() {
     Write-FunctionCallLog $PSBoundParameters
     $processor = Get-MyWmiObject Win32_Processor
     $cpuLoad = $processor | Measure-Object -Property LoadPercentage -Average
-    Write-ReturnValue (Format-InvariantNumber $cpuLoad.Average)
+    # Rounded to 1 decimal, same as Get-CurrentMemoryUsage - averaging LoadPercentage across an
+    # odd number of processors otherwise produces a long repeating decimal (e.g. "18.3333333333333"
+    # for 6 processors averaging 110), confirmed on a real customer host.
+    $roundedCpuLoad = [math]::Round($cpuLoad.Average, 1)
+    Write-ReturnValue (Format-InvariantNumber $roundedCpuLoad)
 }
 
 function Get-CurrentMemoryUsage() {

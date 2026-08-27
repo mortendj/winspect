@@ -15,8 +15,16 @@ function Invoke-ExternalCommand($commandName, $commandArgs) {
     $tempDir = [System.IO.Path]::GetTempPath()
     $stdOutFile = Join-Path $tempDir "$([guid]::NewGuid()).out"
     $stdErrFile = Join-Path $tempDir "$([guid]::NewGuid()).err"
+    # Start-Process's -ArgumentList does its own naive space-joining of the array rather than
+    # proper Win32 argv construction - an element containing internal whitespace (e.g. a SQL query
+    # or a Go template) silently splits into multiple broken arguments instead of arriving as the
+    # single argument it was meant to be. Confirmed on a real host as "template parsing error:
+    # template: :1: unclosed action" for a caller that didn't know to work around it. Quoting any
+    # argument that contains whitespace fixes this at the source instead of requiring every caller
+    # to avoid ever needing a multi-word argument.
+    $quotedCommandArgs = $commandArgs | ForEach-Object { if ($_ -match '\s') { "`"$_`"" } else { $_ } }
     try {
-        Start-Process -FilePath $commandName -ArgumentList $commandArgs -NoNewWindow -Wait `
+        Start-Process -FilePath $commandName -ArgumentList $quotedCommandArgs -NoNewWindow -Wait `
             -RedirectStandardOutput $stdOutFile -RedirectStandardError $stdErrFile
         $standardOutput = Get-Content -Path $stdOutFile -ErrorAction SilentlyContinue
         $errorOutput = Get-Content -Path $stdErrFile -ErrorAction SilentlyContinue

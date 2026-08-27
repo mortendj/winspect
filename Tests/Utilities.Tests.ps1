@@ -63,6 +63,26 @@ Describe "Invoke-WithRetry" {
     }
 }
 
+Describe "Invoke-ExternalCommand" {
+    It "passes an argument containing internal whitespace through as a single argument, not split" {
+        # Regression test for a real bug found on a production host: Start-Process's -ArgumentList
+        # does naive space-joining of the array rather than proper Win32 argv construction, so an
+        # argument like a Go template or a SQL query - anything containing internal spaces - arrived
+        # at the target process broken into multiple separate arguments instead of the one it was
+        # meant to be. Confirmed as "template parsing error: template: :1: unclosed action" from a
+        # docker command whose --format argument got split this way. Exercises the real external-
+        # process boundary (a real pwsh subprocess), not a mock, since the bug is specifically in
+        # how Start-Process constructs the child process's command line.
+        $dumpScriptPath = Join-Path $TestDrive "dump-args.ps1"
+        Set-Content -Path $dumpScriptPath -Value 'foreach ($a in $args) { Write-Output "ARG:$a" }'
+
+        $result = Invoke-ExternalCommand "pwsh" @("-NoProfile", "-File", $dumpScriptPath, "one two three", "four")
+
+        $result | Should -Contain "ARG:one two three"
+        $result | Should -Contain "ARG:four"
+    }
+}
+
 Describe "Update-FileWriteErrorCount" {
     BeforeEach {
         $script:FileWriteErrorCounts = @{}
