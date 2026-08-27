@@ -10,6 +10,11 @@ testResults.xml
 old-code.ps1
 old-src/
 
+# One-off internal/ad-hoc tooling - not part of the public tool, kept locally only
+Get-AllRuleEngineRules.ps1
+rules-*.json
+rules-*.txt
+
 # Build output
 dist/
 
