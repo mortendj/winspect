@@ -10,8 +10,11 @@ BeforeAll {
 
 Describe "Get-HostName" {
     It "returns a non-empty hostname" {
-        # No mocking here - this genuinely queries the real machine, and there's nothing
-        # meaningful to fake it with; just confirm it returns something usable.
+        # No mocking here - this genuinely queries the real machine via .NET's static Dns class,
+        # and there's nothing meaningful to fake it with; just confirm it returns something usable.
+        # On this test machine it may or may not resolve to a full FQDN (depends on whether it's
+        # domain-joined) - that's exactly why this only asserts non-empty rather than a specific
+        # format, matching what a real host would actually return either way.
         Get-HostName | Should -Not -BeNullOrEmpty
     }
 }
