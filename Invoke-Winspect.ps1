@@ -27,6 +27,17 @@ Sets the log level to trace, debug, info, warning or error. Off (no logging) is 
 .PARAMETER skipDiskPerformanceMeasurements
 Skips the (comparatively slow) disk speed and latency measurements.
 
+.PARAMETER monitoringPeriodMinutes
+How many minutes of CPU/memory samples to average over for the RESOURCE USAGE section, default is
+2 - long enough to smooth a momentary spike into a real average, short enough not to meaningfully
+slow the script down. Sampling runs in a background job started as soon as parameters are parsed,
+so this mostly overlaps with the rest of the report being built rather than adding to it. Raise this
+if you deliberately want a longer measurement window.
+
+.PARAMETER monitoringSamplingInSeconds
+The time between each CPU/memory sample within the monitoring period, default is 10. Set to 0 to
+skip monitoring entirely and fall back to a single instantaneous reading instead.
+
 .PARAMETER parametersFile
 Path to a file with parameter name/value pairs (one per line) that act as defaults. Empty lines and
 lines starting with '#' are ignored. Command line parameters still take precedence over anything
@@ -76,6 +87,12 @@ Produces a markdown report, skipping the slow disk performance tests.
 param (
    [switch]$version,
    [switch]$skipDiskPerformanceMeasurements,
+
+   [Parameter(Mandatory=$false)]
+   [double]$monitoringPeriodMinutes = 2,
+
+   [Parameter(Mandatory=$false)]
+   [int]$monitoringSamplingInSeconds = 10,
 
    [Parameter(Mandatory=$false)]
    [ValidateSet("html", "markdown", "text")]
@@ -135,6 +152,8 @@ $cmdline_param_VERSION                            = $adjustedParameters["version
 $cmdline_param_OUTPUT_FORMAT                      = $adjustedParameters["outputFormat"]
 $cmdline_param_OUTPUT_DESTINATION                 = $adjustedParameters["outputDestination"]
 $cmdline_param_SKIP_DISK_PERFORMANCE_MEASUREMENTS = $adjustedParameters["skipDiskPerformanceMeasurements"]
+$cmdline_param_MONITORING_PERIOD_MINUTES          = $adjustedParameters["monitoringPeriodMinutes"]
+$cmdline_param_MONITORING_SAMPLING_SECONDS        = $adjustedParameters["monitoringSamplingInSeconds"]
 $cmdline_param_GMSA_ACCOUNT_NAME                  = $adjustedParameters["gmsaAccountName"]
 $cmdline_param_SKIP_UPDATE_CHECK                  = $adjustedParameters["skipUpdateCheck"]
 $cmdline_param_CERTIFICATE_FILE_PATH              = $adjustedParameters["certificateFilePath"]
@@ -142,5 +161,9 @@ $cmdline_param_CERTIFICATE_HOSTNAME               = $adjustedParameters["certifi
 $cmdline_param_CERTIFICATE_SECTION_LABEL          = $adjustedParameters["certificateSectionLabel"]
 
 Initialize-OutputFormatLayout $cmdline_param_OUTPUT_FORMAT
+
+# Started as early as possible so its background job's sampling period overlaps with the rest of
+# report generation - see Start-CpuMemoryMonitoring in CpuMemoryInfo.ps1.
+Start-CpuMemoryMonitoring $cmdline_param_MONITORING_PERIOD_MINUTES $cmdline_param_MONITORING_SAMPLING_SECONDS
 
 Start-Winspect

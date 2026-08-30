@@ -14,9 +14,14 @@ Describe "Invoke-Winspect end-to-end" {
     }
 
     It "produces a complete, error-free text report to the terminal" {
+        # Uses a short (~3s) monitoring window instead of the 2-minute default so this test still
+        # exercises the real Start-CpuMemoryMonitoring background-job path without slowing the
+        # suite down - -monitoringSamplingInSeconds 0 (used by every other test below that doesn't
+        # care about this section) would skip the job entirely and fall back to a single
+        # instantaneous reading, which wouldn't cover the averaging path at all.
         Push-Location $TestDrive
         try {
-            $output = & $winspectScript -outputFormat text -skipDiskPerformanceMeasurements -outputDestination terminal
+            $output = & $winspectScript -outputFormat text -skipDiskPerformanceMeasurements -outputDestination terminal -monitoringPeriodMinutes 0.05 -monitoringSamplingInSeconds 2
         } finally {
             Pop-Location
         }
@@ -34,16 +39,32 @@ Describe "Invoke-Winspect end-to-end" {
         $reportText | Should -Match "Hostname: \S+"
         $reportText | Should -Match "CPU cores: \d+"
         $reportText | Should -Match "RAM capacity: \d+ GB"
-        $reportText | Should -Match "Current CPU load: [\d.]+ %"
-        $reportText | Should -Match "Current RAM usage: [\d.]+ %"
+        $reportText | Should -Match "Average CPU load \(0.05 min\): [\d.]+ %"
+        $reportText | Should -Match "Peak CPU load \(0.05 min\): [\d.]+ %"
+        $reportText | Should -Match "Average RAM usage \(0.05 min\): [\d.]+ %"
+        $reportText | Should -Match "Peak RAM usage \(0.05 min\): [\d.]+ %"
         $reportText | Should -Not -Match "ERROR -->"
+    }
+
+    It "falls back to a single instantaneous reading when monitoring is skipped" {
+        Push-Location $TestDrive
+        try {
+            $output = (& $winspectScript -outputFormat text -skipDiskPerformanceMeasurements -outputDestination terminal -monitoringSamplingInSeconds 0) -join "`n"
+        } finally {
+            Pop-Location
+        }
+
+        $output | Should -Match "Current CPU load: [\d.]+ %"
+        $output | Should -Match "Current RAM usage: [\d.]+ %"
+        $output | Should -Not -Match "Average CPU load"
+        $output | Should -Not -Match "ERROR -->"
     }
 
     It "produces valid-looking markdown and html reports without errors" {
         Push-Location $TestDrive
         try {
-            $markdown = (& $winspectScript -outputFormat markdown -skipDiskPerformanceMeasurements -outputDestination terminal) -join "`n"
-            $html = (& $winspectScript -outputFormat html -skipDiskPerformanceMeasurements -outputDestination terminal) -join "`n"
+            $markdown = (& $winspectScript -outputFormat markdown -skipDiskPerformanceMeasurements -outputDestination terminal -monitoringSamplingInSeconds 0) -join "`n"
+            $html = (& $winspectScript -outputFormat html -skipDiskPerformanceMeasurements -outputDestination terminal -monitoringSamplingInSeconds 0) -join "`n"
         } finally {
             Pop-Location
         }
@@ -59,7 +80,7 @@ Describe "Invoke-Winspect end-to-end" {
     It "writes a report file into the current directory when the destination includes file" {
         Push-Location $TestDrive
         try {
-            & $winspectScript -outputFormat text -skipDiskPerformanceMeasurements -outputDestination file | Out-Null
+            & $winspectScript -outputFormat text -skipDiskPerformanceMeasurements -outputDestination file -monitoringSamplingInSeconds 0 | Out-Null
             Test-Path (Join-Path $TestDrive "winspect-report.txt") | Should -BeTrue
         } finally {
             Pop-Location
@@ -74,7 +95,7 @@ Describe "Invoke-Winspect end-to-end" {
         # an actual domain-joined host with a real gMSA name.
         Push-Location $TestDrive
         try {
-            $output = (& $winspectScript -outputFormat text -skipDiskPerformanceMeasurements -outputDestination terminal -gmsaAccountName "svc-test") -join "`n"
+            $output = (& $winspectScript -outputFormat text -skipDiskPerformanceMeasurements -outputDestination terminal -gmsaAccountName "svc-test" -monitoringSamplingInSeconds 0) -join "`n"
         } finally {
             Pop-Location
         }
@@ -90,7 +111,7 @@ Describe "Invoke-Winspect end-to-end" {
         # suite already depends on real system/network state elsewhere (e.g. the update check).
         Push-Location $TestDrive
         try {
-            $output = (& $winspectScript -outputFormat text -skipDiskPerformanceMeasurements -outputDestination terminal -certificateHostname "github.com") -join "`n"
+            $output = (& $winspectScript -outputFormat text -skipDiskPerformanceMeasurements -outputDestination terminal -certificateHostname "github.com" -monitoringSamplingInSeconds 0) -join "`n"
         } finally {
             Pop-Location
         }
@@ -105,7 +126,7 @@ Describe "Invoke-Winspect end-to-end" {
         # depending on which code path produced each number.
         Push-Location $TestDrive
         try {
-            $output = (& $winspectScript -outputFormat text -skipDiskPerformanceMeasurements -outputDestination terminal) -join "`n"
+            $output = (& $winspectScript -outputFormat text -skipDiskPerformanceMeasurements -outputDestination terminal -monitoringSamplingInSeconds 0) -join "`n"
         } finally {
             Pop-Location
         }

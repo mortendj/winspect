@@ -66,12 +66,24 @@ function New-Report() {
     )
     $output += New-SectionOutput $sectionHeading $lineScriptBlocks
 
-    # RESOURCE USAGE (current consumption - a point-in-time snapshot, distinct from capacity above)
+    # RESOURCE USAGE (consumption over the monitoring period started at the top of the script - see
+    # Start-CpuMemoryMonitoring - distinct from capacity above). Falls back to a single instantaneous
+    # reading, worded accordingly, when monitoring was skipped (-monitoringSamplingInSeconds 0).
     $sectionHeading = "RESOURCE USAGE"
-    $lineScriptBlocks = @(
-        { "Current CPU load$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-CurrentCpuUsage}) %" },
-        { "Current RAM usage$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-CurrentMemoryUsage}) %" }
-    )
+    if ($cmdline_param_MONITORING_SAMPLING_SECONDS -gt 0) {
+        $periodLabel = "$cmdline_param_MONITORING_PERIOD_MINUTES min"
+        $lineScriptBlocks = @(
+            { "Average CPU load ($periodLabel)$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-AverageCpuUsage}) %" },
+            { "Peak CPU load ($periodLabel)$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-PeakCpuUsage}) %" },
+            { "Average RAM usage ($periodLabel)$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-AverageMemoryUsage}) %" },
+            { "Peak RAM usage ($periodLabel)$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-PeakMemoryUsage}) %" }
+        )
+    } else {
+        $lineScriptBlocks = @(
+            { "Current CPU load$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-CurrentCpuUsage}) %" },
+            { "Current RAM usage$FIELD_LABEL_SEPARATOR$(Invoke-WithErrorHandling -ScriptBlock {Get-CurrentMemoryUsage}) %" }
+        )
+    }
     $output += New-SectionOutput $sectionHeading $lineScriptBlocks
 
     # GMSA ACCOUNT (this section only appears if -gmsaAccountName was supplied)
