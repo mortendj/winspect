@@ -6,10 +6,10 @@ certificate expirations. It reports only on things that are true of any Windows 
 regardless of what's installed on it, so it's meant to be a reusable foundation rather than a
 one-off script.
 
-> **Status:** early, actively developed (v0.15.0). The current release covers host identity,
+> **Status:** v1.0.0. The current release covers host identity,
 > network adapters, certificate expirations (local store, plus an opt-in file/host check), an
-> opt-in gMSA account check, CPU/RAM/disk capacity and usage, and an update check against GitHub
-> releases.
+> opt-in gMSA account check, CPU/RAM/disk capacity and usage (instantaneous or averaged/peaked over
+> a background-sampled period), and an update check against GitHub releases.
 
 ## Features
 
@@ -107,6 +107,8 @@ one-off script.
 | `-outputDestination` | `terminal`, `file`, `both` | `both` | Where the report goes. |
 | `-logLevel` | `trace`, `debug`, `info`, `warning`, `error`, `off` | `off` | Logging verbosity. |
 | `-skipDiskPerformanceMeasurements` | switch | off | Skip the slower disk speed/latency tests. |
+| `-monitoringPeriodMinutes` | number | `2` | Minutes of CPU/memory samples to average over for RESOURCE USAGE. Sampled in a background job started as soon as parameters are parsed, so it mostly overlaps with the rest of the report instead of adding to it. |
+| `-monitoringSamplingInSeconds` | int | `10` | Seconds between each sample within the monitoring period. Set to `0` to skip monitoring and fall back to a single instantaneous reading. |
 | `-parametersFile` | path | none | A file of `name value` pairs to use as defaults; command-line values still win. |
 | `-gmsaAccountName` | string | none | Name of a gMSA account to check; adds the GMSA ACCOUNT section when set. |
 | `-certificateFilePath` | path | none | Path to a certificate file to check. Compared against `-certificateHostname`'s result if both are set; used as a fallback if the live check fails. |
@@ -130,7 +132,7 @@ skipDiskPerformanceMeasurements true
 ####################### REPORT INFO ########################
 Local time: 2026-08-02 10:44:26
 User: CONTOSO-SRV01\admin
-Winspect version: 0.15.0 (2026-08-27)
+Winspect version: 1.0.0 (2026-08-30)
 Running elevated: Yes
 
 ####################### CERTIFICATES #######################
@@ -163,8 +165,10 @@ Disk latency:
     C: -> 0.671 ms
 
 ###################### RESOURCE USAGE ######################
-Current CPU load: 17 %
-Current RAM usage: 82.7 %
+Average CPU load (2 min): 17 %
+Peak CPU load (2 min): 24 %
+Average RAM usage (2 min): 82.7 %
+Peak RAM usage (2 min): 83.1 %
 
 ####################### GMSA ACCOUNT #######################
 Account name: svc-myapp

@@ -30,12 +30,16 @@ Describe "Get-OperatingSystemVersion" {
 }
 
 Describe "Get-MachineId" {
-    It "returns the SMBIOS UUID reported for the computer system product" {
+    It "returns the SMBIOS UUID, base64-encoded to match what the licensing service expects" {
+        # Regression test: this used to return the bare UUID, which reads better but isn't the
+        # value the licensing service's ValidateMachineId actually accepts (it base64-decodes
+        # whatever it's given) - confirmed by decoding a real ConfigInspector "Machine ID" value
+        # during a KTH comparison and finding it was base64(UTF8(uuid-string)), not the raw UUID.
         Mock Get-MyWmiObject {
             [pscustomobject]@{ UUID = "CDF27266-0D99-42DB-9685-5AF465383592" }
         } -ParameterFilter { $className -eq "Win32_ComputerSystemProduct" }
 
-        Get-MachineId | Should -Be "CDF27266-0D99-42DB-9685-5AF465383592"
+        Get-MachineId | Should -Be "Q0RGMjcyNjYtMEQ5OS00MkRCLTk2ODUtNUFGNDY1MzgzNTky"
     }
 }
 

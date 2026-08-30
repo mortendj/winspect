@@ -16,8 +16,14 @@ function Get-OperatingSystemVersion() {
 
 function Get-MachineId() {
     Write-FunctionCallLog $PSBoundParameters
+    # Base64-encoded, not the bare UUID - confirmed against the licensing service
+    # (Ayfie.Saga.Licensing's GetLicenseRequest.ValidateMachineId does Convert.FromBase64String on
+    # this exact value) that this encoded form, not the human-readable GUID, is what's actually
+    # submitted to request/validate a machine-specific license. Matches ConfigInspector's own
+    # Get-MachineId, which already got this right.
     $computerSystemProduct = Get-MyWmiObject Win32_ComputerSystemProduct
-    Write-ReturnValue $computerSystemProduct.UUID
+    $machineId = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($computerSystemProduct.UUID))
+    Write-ReturnValue $machineId
 }
 
 function Get-VirtualizationStatus() {
