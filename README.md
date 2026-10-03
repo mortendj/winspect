@@ -6,7 +6,7 @@ certificate expirations. It reports only on things that are true of any Windows 
 regardless of what's installed on it, so it's meant to be a reusable foundation rather than a
 one-off script.
 
-> **Status:** v1.0.0. The current release covers host identity,
+> **Status:** v1.1.0. The current release covers host identity,
 > network adapters, certificate expirations (local store, plus an opt-in file/host check), an
 > opt-in gMSA account check, CPU/RAM/disk capacity and usage (instantaneous or averaged/peaked over
 > a background-sampled period), and an update check against GitHub releases.
@@ -38,8 +38,12 @@ one-off script.
   certificates shown side by side (the most common real cause is a local TLS-inspecting security
   proxy silently re-signing outbound HTTPS, which a live-only check can't detect since it never
   sees the real file). If only one check succeeds (the other's endpoint is unreachable, or its
-  file is missing), that one is used and the report says so. The section title itself defaults to
-  "ADDITIONAL CERTIFICATE" but can be overridden.
+  file is missing), that one is used and the report says so. When a hostname is known, the
+  resolved certificate's Subject Alternative Names are also checked against it — a certificate can
+  be unexpired and correctly issued and still fail every real TLS handshake if the hostname it's
+  actually served for was never added as a SAN entry (easy to hit with ad-hoc self-signed
+  certificates); this only adds a line when it's actually missing, staying silent on a match. The
+  section title itself defaults to "ADDITIONAL CERTIFICATE" but can be overridden.
 - **gMSA account check** (opt-in, needs a name): whether a named Group Managed Service Account
   exists in Active Directory and whether this host can actually retrieve/use it. Accepts either a
   bare account name or a `DOMAIN\name` form — the domain prefix is stripped before the lookup, since
@@ -132,7 +136,7 @@ skipDiskPerformanceMeasurements true
 ####################### REPORT INFO ########################
 Local time: 2026-08-02 10:44:26
 User: CONTOSO-SRV01\admin
-Winspect version: 1.0.0 (2026-08-30)
+Winspect version: 1.1.0 (2026-10-03)
 Running elevated: Yes
 
 ####################### CERTIFICATES #######################

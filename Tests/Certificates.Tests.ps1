@@ -6,8 +6,14 @@ BeforeAll {
     . "$PSScriptRoot/../src/Utilities.ps1"
     . "$PSScriptRoot/../src/Certificates.ps1"
 
-    function New-FakeCertificate($commonName, $notAfter, $hasPrivateKey = $true, $issuer = "CN=Test CA") {
-        $certificate = [pscustomobject]@{ NotAfter = $notAfter; HasPrivateKey = $hasPrivateKey; Issuer = $issuer }
+    function New-FakeCertificate($commonName, $notAfter, $hasPrivateKey = $true, $issuer = "CN=Test CA", $dnsNames = $null) {
+        # Defaults DnsNameList to just the common name - matches every existing test in this file,
+        # where the hostname checked always equals the certificate's own common name, so the new
+        # SAN check added 2026-10-03 resolves as a clean match unless a test explicitly overrides
+        # $dnsNames to exercise a mismatch.
+        if ($null -eq $dnsNames) { $dnsNames = @($commonName) }
+        $dnsNameList = @($dnsNames | ForEach-Object { [pscustomobject]@{ Unicode = $_ } })
+        $certificate = [pscustomobject]@{ NotAfter = $notAfter; HasPrivateKey = $hasPrivateKey; Issuer = $issuer; DnsNameList = $dnsNameList }
         # GetNameInfo needs to be a closure over $commonName, since by the time it's actually
         # invoked (inside Get-CertificateExpirations), this function's own scope is long gone.
         $getNameInfo = { param($nameType, $forIssuer) return $commonName }.GetNewClosure()
@@ -112,6 +118,43 @@ Describe "Get-AdditionalCertificateInfo" {
         Mock Get-CertificateFromFile { throw "file not found" }
 
         { Get-AdditionalCertificateInfo "C:\missing\cert.crt" "unreachable.example.com:443" } | Should -Throw "*connection refused*file not found*"
+    }
+
+    It "flags it when the configured hostname is missing from the certificate's Subject Alternative Names" {
+        # Regression test for a real finding on a production host: a self-signed certificate had
+        # SAN entries for the bare hostname and bare domain separately, but never the one combined
+        # FQDN actually configured as the gateway hostname - TLS clients fail to validate it even
+        # though the cert/key pair itself is otherwise fine.
+        $certificate = New-FakeCertificate "gw01" (Get-Date).AddDays(30) -dnsNames @("gw01", "example.com")
+        Mock Get-CertificateFromHostname { throw "connection refused" }
+        Mock Get-CertificateFromFile { $certificate }
+
+        $result = Get-AdditionalCertificateInfo "C:\some\cert.crt" "gw01.example.com:443"
+
+        $result | Should -Match "checked via file - live HTTPS check against 'gw01\.example\.com:443' failed: connection refused"
+        $result | Should -Match "hostname 'gw01\.example\.com' NOT found in Subject Alternative Names \(gw01, example\.com\)"
+    }
+
+    It "stays silent about Subject Alternative Names when the hostname is found (the common case)" {
+        $certificate = New-FakeCertificate "from-host.example.com" (Get-Date).AddDays(30)
+        Mock Get-CertificateFromFile { throw "should not be called" }
+        Mock Get-CertificateFromHostname { $certificate }
+
+        $result = Get-AdditionalCertificateInfo "" "from-host.example.com:443"
+
+        $result | Should -Match "checked live via HTTPS$"
+        $result | Should -Not -Match "Subject Alternative Names"
+    }
+
+    It "flags a SAN mismatch on the live certificate even when the live and file certificates otherwise match" {
+        $liveCertificate = New-FakeCertificate "engine.example.com" (Get-Date).AddDays(30) -issuer "CN=Real CA" -dnsNames @("engine.example.com")
+        $fileCertificate = New-FakeCertificate "engine.example.com" (Get-Date).AddDays(30) -issuer "CN=Real CA"
+        Mock Get-CertificateFromHostname { $liveCertificate }
+        Mock Get-CertificateFromFile { $fileCertificate }
+
+        $result = Get-AdditionalCertificateInfo "C:\some\cert.crt" "wrong-hostname.example.com:443"
+
+        $result | Should -Match "hostname 'wrong-hostname\.example\.com' NOT found in Subject Alternative Names \(engine\.example\.com\)"
     }
 }
 
