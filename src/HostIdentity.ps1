@@ -2,7 +2,7 @@ function Get-HostName() {
     Write-FunctionCallLog $PSBoundParameters
     # Resolved to the FQDN, not just the short hostname - confirmed as a real regression across
     # multiple real customer hosts (e.g. "AyfieSearch03" vs the actually useful
-    # "AyfieSearch03.oslo.ngi.no"). Falls back to the short name unchanged on a host with no
+    # "AyfieSearch03.contoso.local"). Falls back to the short name unchanged on a host with no
     # resolvable domain suffix (a workgroup machine), since GetHostEntry simply returns the same
     # name it was given in that case - nothing to catch, this never throws for that reason.
     Write-ReturnValue ([System.Net.Dns]::GetHostEntry([System.Net.Dns]::GetHostName()).HostName)
